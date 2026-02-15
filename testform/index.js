@@ -1,3 +1,3 @@
-function showAlert() {
-    alert("The PDF is dead.");
-}
+document.getElementById('submit')?.addEventListener('click', async () => {
+    alert('sending form data...');
+});

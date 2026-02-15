@@ -3,11 +3,45 @@ import * as path from 'path';
 import * as fs from 'fs';
 import JSZip, { file } from 'jszip';
 import {dialog,ipcMain} from 'electron';
-import { electron } from 'process';
+import { Menu } from 'electron';
 
 
 let zip: JSZip | null = null;
 
+const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+    {
+        label: 'File',
+        submenu: [
+            {
+                label: 'Open',
+                click: async (menuItem, browserWindow) => {
+                    if (!browserWindow) return;
+
+                    const filePath = await selectFilePath();
+                    console.log("Selected file:", filePath);
+                    if (!filePath) { return; }
+
+                    await loadZipIntoMemory(filePath).catch((err) => {
+                        console.error("Error loading zip file:", err);
+                    });
+
+                    const win = browserWindow as Electron.BrowserWindow;
+                    win.loadURL('dpdf://index.html');
+                }
+            },
+            {
+                label: 'Save',
+                click: async (menuItem, browserWindow) => {
+                    if (!browserWindow) return;
+
+                    
+                }
+            },
+            { type: 'separator' },
+            { role: 'quit' }
+        ]
+    },
+];
 
 app.whenReady().then(() => {
 
@@ -36,6 +70,9 @@ app.whenReady().then(() => {
         });
 
     });
+
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
 
     createWindow();
 
@@ -68,6 +105,12 @@ ipcMain.handle('open-dpdf', async (webContents) => {
     return filePath;
 });
 
+ipcMain.handle('save-dpdf', async (webContents, data) => {
+    await saveDataToFile(data).catch((err) => {
+        console.error("Error saving data to zip:", err);
+    });
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
@@ -78,13 +121,6 @@ function createWindow() {
         nodeIntegration: false
     },
   });
-
-  // Load the zip file into memory at startup
-  //const dpdfFilePath = "C:\\Users\\twakj\\source\\repos\\jacosr\\deadpdf\\testform\\testform.dpdf";
-  //loadZipIntoMemory(dpdfFilePath);
-  //win.loadURL('dpdf://index.html');
-
-  win.loadURL('file://' + path.join(__dirname, 'renderer/index.html'));
 }
 
 async function loadZipIntoMemory(filePath: string) {
@@ -139,5 +175,24 @@ async function selectFilePath(): Promise<string | null> {
     return result.filePaths[0];
 }
 
+async function saveDataToFile(data: any): Promise<void> {
+    if (!zip) { return; }
 
+    const json = JSON.stringify(data, null, 2);
+    zip.file('data.json', json);
+
+    const content = await zip.generateAsync({ type: 'nodebuffer' });
+    const { filePath } = await dialog.showSaveDialog({
+        title: 'Save DeadPDF File',
+        defaultPath: 'deadpdf_output.dpdf',
+        filters: [
+            { name: 'DeadPDF Files', extensions: ['dpdf'] },
+            { name: 'All files', extensions: ['*'] }
+        ]
+    });
+
+    if (filePath) {
+        fs.writeFileSync(filePath, content);
+    }
+}
 
