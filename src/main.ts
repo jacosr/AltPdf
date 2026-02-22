@@ -26,21 +26,32 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
                     });
 
                     const win = browserWindow as Electron.BrowserWindow;
-                    win.loadURL('dpdf://index.html');
+                    await win.loadURL('dpdf://index.html');
+
+                    
                 }
             },
             {
                 label: 'Save',
                 click: async (menuItem, browserWindow) => {
                     if (!browserWindow) return;
-
-                    
+                    console.log("Save menu clicked");
+                    const win = browserWindow as Electron.BrowserWindow;
+                    console.log("Executing saveFile in renderer...");
+                    await await win.webContents.executeJavaScript('window.deadpdf.saveFile()');
                 }
             },
             { type: 'separator' },
             { role: 'quit' }
-        ]
+        ],
     },
+    {
+        label: 'View',
+        submenu: [
+            { role: 'reload' },
+            { role: 'toggleDevTools' }
+        ]
+    }
 ];
 
 app.whenReady().then(() => {
@@ -111,6 +122,14 @@ ipcMain.handle('save-dpdf', async (webContents, data) => {
     });
 });
 
+// ipcMain.handle('get-form-data', async (webContents) => {
+//     const win = BrowserWindow.fromWebContents(webContents);
+//     if (win) {
+//         return await win.webContents.executeJavaScript('window.deadpdf.getFormData()');
+//     }
+//     return {};
+// });
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
@@ -121,6 +140,7 @@ function createWindow() {
         nodeIntegration: false
     },
   });
+  win.loadFile('./src/renderer/index.html');
 }
 
 async function loadZipIntoMemory(filePath: string) {
