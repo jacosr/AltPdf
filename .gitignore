@@ -14,3 +14,12 @@ dist
 
 # Ignore VS Code settings
 .vscode/
+
+# claude ai
+.claude/
+
+#ignore test form 
+testform/
+
+#ignore test form packaging script 
+dpdf_worksheet.ps1

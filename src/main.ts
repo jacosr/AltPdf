@@ -26,7 +26,7 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
                     });
 
                     const win = browserWindow as Electron.BrowserWindow;
-                    await win.loadURL('dpdf://index.html');
+                    await win.loadURL('dpdf://localhost/index.html');
 
                     
                 }
@@ -54,32 +54,20 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
     }
 ];
 
+protocol.registerSchemesAsPrivileged([
+    { scheme: 'dpdf', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+]);
+
 app.whenReady().then(() => {
 
-    protocol.registerBufferProtocol('dpdf', (request, callback) => {
-        const url = request.url.replace('dpdf://', '');    // all urls start with dpdf://
-        
-        // try to load from zip
-        getFileFromZip(url).then((data) => {
-            if (data) {
-
-                callback({
-                    mimeType: getMimeType(url),
-                    data: data  
-                });
-                return;
-            }
-            else {
-                // default fallback
-                callback({
-                    data: Buffer.from(`Not found: ${url}`), 
-                    mimeType: 'text/plain' 
-                });
-            }
-        }).catch((err) => {
-            console.error("Error loading from zip:", err);
-        });
-
+    protocol.handle('dpdf', async (request) => {
+        const { pathname } = new URL(request.url);
+        const filePath = pathname.slice(1); // strip leading '/'
+        const data = await getFileFromZip(filePath);
+        if (data) {
+            return new Response(data.toString(), { headers: { 'Content-Type': getMimeType(filePath) } });
+        }
+        return new Response(`Not found: ${filePath}`, { status: 404, headers: { 'Content-Type': 'text/plain' } });
     });
 
     const menu = Menu.buildFromTemplate(menuTemplate);
@@ -111,7 +99,7 @@ ipcMain.handle('open-dpdf', async (webContents) => {
     console.log("Loaded zip into memory:", filePath);
 
     const win = BrowserWindow.getFocusedWindow();
-    win?.loadURL('dpdf://index.html');
+    win?.loadURL('dpdf://localhost/index.html');
 
     return filePath;
 });
