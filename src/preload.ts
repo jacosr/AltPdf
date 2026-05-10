@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+let _formDataCollector: (() => any) | null = null;
+
 function _getFormData(): any {
+    if (_formDataCollector) return _formDataCollector();
     console.log("Collecting form data...");
     const data: any = {};
     document.querySelectorAll('[name]').forEach(el => {
@@ -31,6 +34,7 @@ function _bindData(data: any) {
 
 contextBridge.exposeInMainWorld('deadpdf', {
 
+    setGetFormData: (fn: () => any) => { _formDataCollector = fn; },
     getFormData: () => { return _getFormData(); },
     openFile: () => ipcRenderer.invoke('open-dpdf'),
     saveFile: () => {
