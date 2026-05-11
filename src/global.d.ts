@@ -9,6 +9,7 @@ declare global {
       loadData: () => Promise<any>;
       bindData: (data: any) => void;
       setGetFormData: (fn: () => any) => void;
+      setBindData: (fn: (data: any) => void) => void;
       getFormData: () => any;
     };
   }

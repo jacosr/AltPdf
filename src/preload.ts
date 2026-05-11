@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 let _formDataCollector: (() => any) | null = null;
+let _bindDataOverride: ((data: any) => void) | null = null;
 
 function _getFormData(): any {
     if (_formDataCollector) return _formDataCollector();
@@ -24,6 +25,7 @@ async function _loadData(): Promise<any> {
 }
 
 function _bindData(data: any) {
+    if (_bindDataOverride) { _bindDataOverride(data); return; }
     document.querySelectorAll('[name]').forEach(el => {
         const name = el.getAttribute('name');
         if (name && data[name]) {
@@ -35,6 +37,7 @@ function _bindData(data: any) {
 contextBridge.exposeInMainWorld('deadpdf', {
 
     setGetFormData: (fn: () => any) => { _formDataCollector = fn; },
+    setBindData: (fn: (data: any) => void) => { _bindDataOverride = fn; },
     getFormData: () => { return _getFormData(); },
     openFile: () => ipcRenderer.invoke('open-dpdf'),
     saveFile: () => {
