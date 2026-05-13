@@ -67,14 +67,57 @@ async function _loadData(): Promise<any> {
     return res.json();
 }
 
-function _bindData(data: any) {
+function _bindData(data: any): void {
     if (_bindDataOverride) { _bindDataOverride(data); return; }
-    document.querySelectorAll('[name]').forEach(el => {
-        const name = el.getAttribute('name');
-        if (name && data[name]) {
-            (el as any).value = data[name];
+
+    const formName = Object.keys(data)[0];
+    if (!formName) return;
+    const formData: Record<string, any> = data[formName];
+
+    const form = document.querySelector<HTMLFormElement>(`form[name="${formName}"]`)
+        ?? document.getElementById(formName) as HTMLFormElement | null
+        ?? document.querySelector('form');
+    if (!form) { console.warn("No form found for binding."); return; }
+
+    function fill(container: Element, values: Record<string, any>): void {
+        function walk(node: Element): void {
+            for (const child of node.children) {
+                if (child.tagName.toUpperCase() === 'FIELDSET') {
+                    const name = child.getAttribute('name');
+                    if (name && name in values && !Array.isArray(values[name]) && typeof values[name] === 'object') {
+                        fill(child, values[name]);
+                    } else {
+                        walk(child);
+                    }
+                } else if (child.matches('input, textarea, select')) {
+                    const el = child as HTMLInputElement;
+                    const name = el.getAttribute('name');
+                    if (!name || !(name in values)) continue;
+                    const val = values[name];
+
+                    if (el.type === 'checkbox') {
+                        const arr: string[] = Array.isArray(val) ? val : [val];
+                        el.checked = arr.includes(el.value);
+                    } else if (el.type === 'radio') {
+                        el.checked = el.value === String(val);
+                    } else if (el.type === 'select-multiple') {
+                        const sel = el as unknown as HTMLSelectElement;
+                        const arr: string[] = Array.isArray(val) ? val : [val];
+                        for (const opt of sel.options) {
+                            opt.selected = arr.includes(opt.value);
+                        }
+                    } else {
+                        el.value = String(val ?? '');
+                    }
+                } else {
+                    walk(child);
+                }
+            }
         }
-    });
+        walk(container);
+    }
+
+    fill(form, formData);
 }
 
 contextBridge.exposeInMainWorld('deadpdf', {
