@@ -11,6 +11,10 @@ declare global {
       setGetFormData: (fn: () => any) => void;
       setBindData: (fn: (data: any) => void) => void;
       getFormData: () => any;
+      signTemplate:   () => Promise<void>;
+      signData:       () => Promise<void>;
+      verifyTemplate: () => Promise<void>;
+      verifyData:     () => Promise<void>;
     };
   }
 }

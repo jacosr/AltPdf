@@ -139,7 +139,11 @@ contextBridge.exposeInMainWorld('deadpdf', {
     },
     bindData: (data: any) => {
         _bindData(data);
-    }
+    },
+    signTemplate:   () => ipcRenderer.invoke('sign-template'),
+    signData:       () => ipcRenderer.invoke('sign-data'),
+    verifyTemplate: () => ipcRenderer.invoke('verify-template'),
+    verifyData:     () => ipcRenderer.invoke('verify-data'),
 }); 
 
 
