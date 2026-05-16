@@ -8,6 +8,7 @@ import * as forge from 'node-forge';
 let zip: JSZip | null = null;
 let currentFilePath: string | null = null;
 let _promptResolve: ((value: string | null) => void) | null = null;
+let _promptWindow: BrowserWindow | null = null;
 
 // Files excluded when hashing the template
 const SIGN_EXCLUSIONS = new Set(['template-certificate.json', 'data-signature.json', 'data.json']);
@@ -117,17 +118,18 @@ async function selectCertificate(win: BrowserWindow): Promise<CertificateInfo | 
 async function showPromptWindow(parent: BrowserWindow, message: string, isPassword = false): Promise<string | null> {
     return new Promise((resolve) => {
         _promptResolve = resolve;
-        const promptWin = new BrowserWindow({
+        _promptWindow = new BrowserWindow({
             width: 420, height: 165,
             parent, modal: true,
             resizable: false, minimizable: false, maximizable: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        promptWin.setMenu(null);
-        promptWin.loadFile(path.join(__dirname, 'renderer/prompt.html'), {
+        _promptWindow.setMenu(null);
+        _promptWindow.loadFile(path.join(__dirname, 'renderer/prompt.html'), {
             query: { message, ...(isPassword && { type: 'password' }) }
         });
-        promptWin.on('closed', () => {
+        _promptWindow.on('closed', () => {
+            _promptWindow = null;
             if (_promptResolve) { _promptResolve(null); _promptResolve = null; }
         });
     });
@@ -135,6 +137,8 @@ async function showPromptWindow(parent: BrowserWindow, message: string, isPasswo
 
 ipcMain.on('prompt-result', (_event, value: string | null) => {
     if (_promptResolve) { _promptResolve(value); _promptResolve = null; }
+    _promptWindow?.close();
+    _promptWindow = null;
 });
 
 // ─── zip helpers ──────────────────────────────────────────────────────────────
