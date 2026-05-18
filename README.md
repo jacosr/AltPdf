@@ -1,5 +1,5 @@
 <h1>Dead PDF</h1>
-<p>Let's face it, PDF is a dead technology, or at least it should be.  There is very little you can do with a PDF that you can't do with a web page, and the tools you have to use to create and edit a PDF are expensive and awkward to use.  But don't PDFs give you format preservation and printability? You can accomplish all these same things with just a little CSS styling.  There are really only two things left that PDFs offer over web pages:
+<p>Let's face it, PDF is a dead technology, or at least it should be.  There is very little you can do with a PDF that you can't do with a web page, and the tools you have to use to create and edit a PDF are expensive and awkward to use.  PDFs do give you format preservation and printability, but you can accomplish all these same things in a web page with just a little CSS styling.  There are really only two things left that PDFs offer over web pages:
 <ol>
   <li>Portability - email it, save it to a file share, etc. </li>
   <li>Digital signatures - ensure the page is authentic or that the data from a form has not been tampered with</li>
@@ -12,5 +12,31 @@ Dead PDF fills these gaps.  It's basically a portable little website that you ca
   <li>Zip up the directory into a zipped archive</li>
   <li>Change the extension from .zip to .dpdf</li>
 </ol>
-That's it!  Now you can open your file with Dead PDF.  You can do with it whatever you would have done with a PDF.  
+That's it!  Now you can view your file with Dead PDF, and you can do with your file whatever you would have done with a regular PDF.  
+</p>
+<h3>Forms with Dead PDF</h3>
+<p>Dead PDF can display any HTML page, including HTML forms.  If you are creating a form, Dead PDF gives you two default functions: one that collects user data into a json object, and one that binds the saved json object to the form.  You don't have to do any of that programming yourself, unless you want to.  If you do, you can easily override the default functions with your own custom ones.  Regardless of how you collect the data from the form, it will be saved to a file called data.json and saved to the dpdf zipped archive.</p>
+<p>By default, Dead PDF collects the data by mapping all of the form fields to a json object.  There is one root object with one property, the name of the form.  The value of this one property is an object containing all the form data.  The name of each input element of the form corresponds to a property of this data object, and the value of the input element gets assigned as the value of the property.  If there are two input elements with the same name, then the value of the data object property becomes an array</p>
+<p>For example, suppose you have the following form:<br/>
+  <pre>
+  &ltform name="testform"&gt
+    Enter your name &ltbr/&gt
+    &ltinput name="name" /&gt&ltbr/&gt
+    What flavors do you like?
+    &ltinput name="flavors" type="checkbox" value="vanilla"&gtvanilla&ltbr/&gt
+    &ltinput name="flavors" type="checkbox" value="chocolate"&gtchocolate&ltbr/&gt
+    &ltinput name="flavors" type="checkbox" value="strawberry"&gtstrawberry&ltbr/&gt
+    &ltinput name="flavors" type="checkbox" value="coffee"&gtcoffee&ltbr/&gt
+    &ltinput id="submit" type="button" value="Submit" /&gt
+  &lt/form&gt  
+  </pre>
+  Now suppose you enter "Bob" for the name and check the vanilla and coffee checkboxes, the resulting data.json would contain:
+  <pre>
+    {
+      "testform":{
+        "name":"Bob",
+        "flavors":["vanilla","coffee"]
+      }
+    }
+  </pre>
 </p>
