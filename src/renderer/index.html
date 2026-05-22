@@ -1,15 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DeadPDF</title>
-  </head>
-  <body>
-    <h1>DeadPDF</h1>
-    <p>DeadPDF is a tool for replacing PDF files that you kill.</p>
-    <button id="open">Open DeadPDF File</button>
-    <img src="dancer.gif" style="margin-left: 50px;" alt="dancing stick figure"/>
-    <script src="index.ts"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeadPDF</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0c0c13;
+      --surface:    #13131d;
+      --surface-2:  #191926;
+      --border:     #25253a;
+      --accent:     #6366f1;
+      --accent-dim: rgba(99,102,241,0.12);
+      --text:       #dcdcf0;
+      --muted:      #5a5a88;
+      --tag-bg:     #1b1b2a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 55% 55% at 68% 28%, rgba(99,102,241,0.08) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 40% at 32% 72%, rgba(139,92,246,0.05) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      padding: 0 24px;
+    }
+
+    /* ── logo ── */
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .logo-mark {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(140deg, #6366f1, #8b5cf6);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 36px rgba(99,102,241,0.35);
+      flex-shrink: 0;
+    }
+
+    .app-title {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 20%, #9898c8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 13.5px;
+      letter-spacing: 0.1px;
+      margin-bottom: 36px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── open panel ── */
+    .open-panel {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 34px 32px 26px;
+      text-align: center;
+      margin-bottom: 24px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .open-panel:hover {
+      border-color: #333350;
+      background: var(--surface-2);
+    }
+
+    .panel-icon {
+      width: 54px;
+      height: 54px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .panel-heading {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .panel-sub {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .open-btn {
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: #fff;
+      border: none;
+      padding: 11px 30px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+
+    .open-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99,102,241,0.45);
+    }
+
+    .open-btn:active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .ext-name {
+      color: #8080b0;
+      font-weight: 500;
+    }
+
+    .ext-hint {
+      margin-top: 13px;
+      font-size: 11px;
+      color: #33334d;
+      letter-spacing: 0.6px;
+    }
+
+    /* ── feature tags ── */
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .tag {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tag-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.65;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <!-- document -->
+          <rect x="5" y="3" width="14" height="18" rx="2"
+                fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+          <line x1="9" y1="9"  x2="15" y2="9"  stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="9" y1="12" x2="15" y2="12" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="9" y1="15" x2="12" y2="15" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- verified badge -->
+          <circle cx="20" cy="20" r="6" fill="#6366f1" stroke="#0c0c13" stroke-width="1.5"/>
+          <path d="M17.5 20.1l1.7 1.7 3.1-3.1"
+                stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="app-title">DeadPDF</span>
+    </div>
+
+    <p class="tagline">
+      Portable digital forms with cryptographic signing &amp; tamper verification
+    </p>
+
+    <div class="open-panel">
+      <div class="panel-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M13 16V5M9 9l4-5 4 5"
+                stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 19v1a2 2 0 002 2h12a2 2 0 002-2v-1"
+                stroke="#6366f1" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="panel-heading">Open a DeadPDF file</div>
+      <div class="panel-sub">
+        Select a <strong class="ext-name">.dpdf</strong> package to view,
+        complete, or sign its form.
+      </div>
+      <button class="open-btn" id="open" type="button">Browse Files</button>
+      <div class="ext-hint">.dpdf &nbsp;·&nbsp; .zip</div>
+    </div>
+
+    <div class="features">
+      <div class="tag"><div class="tag-dot"></div>Smart form collection</div>
+      <div class="tag"><div class="tag-dot"></div>Certificate-based signing</div>
+      <div class="tag"><div class="tag-dot"></div>Tamper detection</div>
+      <div class="tag"><div class="tag-dot"></div>Nested fieldsets</div>
+    </div>
+
+  </div>
+  <script src="index.ts"></script>
+</body>
 </html>
