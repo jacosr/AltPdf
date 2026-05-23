@@ -45,9 +45,9 @@ function collectFormData(form) {
 }
 
 // Register our collector so the preload uses the fieldset-aware version
-window.deadpdf.setGetFormData(function() {
-    return collectFormData(document.querySelector('form'));
-});
+//window.deadpdf.setGetFormData(function() {
+//    return collectFormData(document.querySelector('form'));
+//});
 
 // Submit
 document.getElementById('submit').addEventListener('click', async function() {

@@ -493,6 +493,17 @@ async function saveDataToFile(data: any): Promise<void> {
     if (!zip) return;
     zip.file('data.json', JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
+    const filePath = currentFilePath;
+    if (filePath) {
+        fs.writeFileSync(filePath, content);
+        currentFilePath = filePath;
+    }
+}
+
+async function saveAsDataToFile(data: any): Promise<void> {
+    if (!zip) return;
+    zip.file('data.json', JSON.stringify(data, null, 2));
+    const content = await zip.generateAsync({ type: 'nodebuffer' });
     const { filePath } = await dialog.showSaveDialog({
         title: 'Save DeadPDF File',
         defaultPath: 'deadpdf_output.dpdf',
