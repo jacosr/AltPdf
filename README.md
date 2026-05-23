@@ -1,5 +1,5 @@
 <h1>Dead PDF</h1>
-<p>Let's face it, PDF is a dead technology, or at least it should be.  There is very little you can do with a PDF that you can't do with a web page, and the tools you have to use to create and edit a PDF are expensive and awkward to use.  PDFs do give you format preservation and printability, but you can accomplish all these same things in a web page with just a little CSS styling.  There are really only two things left that PDFs offer over web pages:
+<p>I've come to believe that PDF is a dead technology, or at least it should be.  There is very little you can do with a PDF that you can't do with a web page, and the tools you have to use to create and edit a PDF are expensive and awkward to use.  PDFs do give you format preservation and printability, but you can accomplish all these same things in a web page with just a little CSS styling.  There are really only two things left that PDFs offer over web pages:
 <ol>
   <li>Portability - email it, save it to a file share, etc. </li>
   <li>Digital signatures - ensure the page is authentic or that the data from a form has not been tampered with</li>
