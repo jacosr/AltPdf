@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beer Finder Survey</title>
+  <link rel="stylesheet" href="dpdf://localhost/index.css">
+</head>
+<body>
+<div class="survey-wrap">
+
+  <header class="survey-header">
+    <span class="header-icon">🍺</span>
+    <h1>Beer Finder Survey</h1>
+    <p>Answer a few questions and we'll identify the perfect style for you.</p>
+  </header>
+
+  <form name="beer_survey">
+
+    <!-- ═══ 1. DRINKER PROFILE ══════════════════════════════════════ -->
+    <fieldset name="personal">
+      <legend>Drinker Profile</legend>
+
+      <div class="form-row col2">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" name="name" id="name" placeholder="e.g. Jane Smith">
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" placeholder="you@example.com">
+        </div>
+      </div>
+
+      <div class="form-row col2">
+        <div class="form-group">
+          <label for="age">Age</label>
+          <input type="number" name="age" id="age" min="18" max="120" placeholder="21">
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone <span class="optional">(optional)</span></label>
+          <input type="tel" name="phone" id="phone" placeholder="+1 555 000 0000">
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ═══ 2. TASTE PROFILE ════════════════════════════════════════ -->
+    <fieldset name="taste_profile">
+      <legend>Taste Profile</legend>
+
+      <div class="form-row">
+        <div class="range-wrap">
+          <div class="range-header">
+            <label for="bitterness" class="field-label">Bitterness Preference</label>
+            <span><output id="bitterness_val" class="range-val">30</output> IBU</span>
+          </div>
+          <input type="range" name="bitterness" id="bitterness" min="0" max="100" value="30" step="5">
+          <div class="range-scale"><span>Not Bitter</span><span>Very Bitter</span></div>
+        </div>
+      </div>
+
+      <div class="form-row col2">
+        <div class="range-wrap">
+          <div class="range-header">
+            <label for="sweetness" class="field-label">Sweetness</label>
+            <output id="sweetness_val" class="range-val">5</output>
+          </div>
+          <input type="range" name="sweetness" id="sweetness" min="1" max="10" value="5">
+          <div class="range-scale"><span>Bone Dry</span><span>Very Sweet</span></div>
+        </div>
+        <div class="range-wrap">
+          <div class="range-header">
+            <label for="body" class="field-label">Body</label>
+            <output id="body_val" class="range-val">3</output>
+          </div>
+          <input type="range" name="body" id="body" min="1" max="5" value="3">
+          <div class="range-scale"><span>Light</span><span>Full-Bodied</span></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <span class="field-label">Carbonation Level</span>
+          <div class="options-grid col4">
+            <label class="option-label"><input type="radio" name="carbonation" value="still"> Still</label>
+            <label class="option-label"><input type="radio" name="carbonation" value="light"> Lightly</label>
+            <label class="option-label"><input type="radio" name="carbonation" value="medium" checked> Medium</label>
+            <label class="option-label"><input type="radio" name="carbonation" value="high"> Highly</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group color-row">
+          <label for="preferred_color" class="field-label">Preferred Beer Color</label>
+          <div class="color-group">
+            <input type="color" name="preferred_color" id="preferred_color" value="#dba020">
+            <span class="color-hint">Pick the hue you're drawn to — from pale golden to pitch black.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── nested: flavor notes ──────────────────────── -->
+      <fieldset name="flavor_notes">
+        <legend>Flavor Notes — Check All That Appeal</legend>
+        <div class="options-grid">
+          <label class="option-label"><input type="checkbox" name="flavors"    value="citrus">    🍋 Citrus &amp; Bright</label>
+          <label class="option-label"><input type="checkbox" name="flavors"  value="tropical">  🍍 Tropical Fruit</label>
+          <label class="option-label"><input type="checkbox" name="flavors"     value="malty">     🍞 Malty &amp; Bready</label>
+          <label class="option-label"><input type="checkbox" name="flavors"    value="roasty">    ☕ Roasty &amp; Coffee</label>
+          <label class="option-label"><input type="checkbox" name="flavors"    value="floral">    🌸 Floral &amp; Herbal</label>
+          <label class="option-label"><input type="checkbox" name="flavors"     value="spicy">     🌶️ Spicy &amp; Peppery</label>
+          <label class="option-label"><input type="checkbox" name="flavors"      value="sour">      🍋 Sour &amp; Tart</label>
+          <label class="option-label"><input type="checkbox" name="flavors"     value="smoky">     🔥 Smoky</label>
+          <label class="option-label"><input type="checkbox" name="flavors" value="chocolate"> 🍫 Chocolate</label>
+          <label class="option-label"><input type="checkbox" name="flavors"    value="earthy">    🍄 Earthy &amp; Funky</label>
+        </div>
+      </fieldset>
+
+    </fieldset>
+
+    <!-- ═══ 3. DRINKING CONTEXT ════════════════════════════════════ -->
+    <fieldset name="context">
+      <legend>Drinking Context</legend>
+
+      <div class="form-row">
+        <div class="form-group">
+          <span class="field-label">Primary Occasion</span>
+          <div class="options-grid">
+            <label class="option-label"><input type="radio" name="occasion" value="casual">  Casual relaxation</label>
+            <label class="option-label"><input type="radio" name="occasion" value="social">  Social gathering</label>
+            <label class="option-label"><input type="radio" name="occasion" value="dining">  Pairing with food</label>
+            <label class="option-label"><input type="radio" name="occasion" value="special"> Special occasion</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row col2">
+        <div class="form-group">
+          <label for="frequency">How Often Do You Drink Beer?</label>
+          <select name="frequency" id="frequency">
+            <option value="">— Select —</option>
+            <option value="rarely">Rarely (a few times a year)</option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">A few times a week</option>
+            <option value="daily">Daily</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="preferred_time">Preferred Drinking Time</label>
+          <input type="time" name="preferred_time" id="preferred_time" value="18:00">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="last_great_beer">When Did You Last Have a Truly Great Beer?</label>
+          <input type="date" name="last_great_beer" id="last_great_beer">
+        </div>
+      </div>
+
+      <!-- ── nested: companions ────────────────────────── -->
+      <fieldset name="companions">
+        <legend>Who You Drink With</legend>
+        <div class="form-row col2">
+          <div class="form-group">
+            <span class="field-label">Typically You Drink</span>
+            <div class="options-grid col1">
+              <label class="option-label"><input type="radio" name="drink_with" value="solo">    Alone</label>
+              <label class="option-label"><input type="radio" name="drink_with" value="partner"> With a partner</label>
+              <label class="option-label"><input type="radio" name="drink_with" value="friends"> With friends</label>
+              <label class="option-label"><input type="radio" name="drink_with" value="mixed">   Mixed company</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="group_size">Typical Group Size</label>
+            <input type="number" name="group_size" id="group_size" min="1" max="50" value="2">
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="preferred_settings">
+            Where Do You Usually Drink?
+            <span class="optional">(hold Ctrl / ⌘ to select multiple)</span>
+          </label>
+          <select name="preferred_settings" id="preferred_settings" multiple size="5">
+            <option value="pub">Bar or Pub</option>
+            <option value="home">At Home</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="outdoors">Outdoors / BBQ</option>
+            <option value="sports">Sports Event</option>
+            <option value="concert">Concert or Festival</option>
+            <option value="fine_dining">Fine Dining</option>
+          </select>
+        </div>
+      </div>
+
+    </fieldset>
+
+    <!-- ═══ 4. ADVANCED PREFERENCES ════════════════════════════════ -->
+    <fieldset name="advanced">
+      <legend>Advanced Preferences</legend>
+
+      <div class="form-row">
+        <div class="range-wrap">
+          <div class="range-header">
+            <label for="abv_preference" class="field-label">Preferred ABV</label>
+            <span><output id="abv_preference_val" class="range-val">5.0</output>%</span>
+          </div>
+          <input type="range" name="abv_preference" id="abv_preference" min="2" max="15" value="5" step="0.5">
+          <div class="range-scale"><span>Session (2%)</span><span>High Gravity (15%)</span></div>
+        </div>
+      </div>
+
+      <div class="form-row col2">
+        <div class="form-group">
+          <label for="preferred_region">Preferred Origin</label>
+          <select name="preferred_region" id="preferred_region">
+            <option value="">No preference</option>
+            <option value="american_craft">American Craft</option>
+            <option value="belgian">Belgian</option>
+            <option value="german">German</option>
+            <option value="british">British / Irish</option>
+            <option value="czech">Czech</option>
+            <option value="mexican">Mexican</option>
+            <option value="japanese">Japanese</option>
+            <option value="other">Other / International</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <span class="field-label">Production Scale</span>
+          <div class="options-grid col1">
+            <label class="option-label"><input type="radio" name="craft_preference" value="independent"> Independent craft</label>
+            <label class="option-label"><input type="radio" name="craft_preference" value="regional">    Regional craft</label>
+            <label class="option-label"><input type="radio" name="craft_preference" value="commercial">  Major commercial</label>
+            <label class="option-label"><input type="radio" name="craft_preference" value="any">         No preference</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── nested: visual preferences ───────────────── -->
+      <fieldset name="appearance">
+        <legend>Visual Preferences</legend>
+        <div class="form-row col2">
+          <div class="form-group">
+            <span class="field-label">Clarity</span>
+            <div class="options-grid col1">
+              <label class="option-label"><input type="radio" name="clarity" value="clear">       Crystal clear</label>
+              <label class="option-label"><input type="radio" name="clarity" value="slight_haze"> Slight haze</label>
+              <label class="option-label"><input type="radio" name="clarity" value="hazy">        Hazy / Unfiltered</label>
+              <label class="option-label"><input type="radio" name="clarity" value="opaque">      Opaque</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <span class="field-label">Head Size</span>
+            <div class="options-grid col1">
+              <label class="option-label"><input type="radio" name="head_size" value="none">     No head</label>
+              <label class="option-label"><input type="radio" name="head_size" value="minimal">  Minimal</label>
+              <label class="option-label"><input type="radio" name="head_size" value="moderate"> Moderate</label>
+              <label class="option-label"><input type="radio" name="head_size" value="generous"> Generous</label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+    </fieldset>
+
+    <!-- ═══ FOOTER ══════════════════════════════════════════════════ -->
+    <div class="form-footer">
+      <div class="form-group">
+        <label for="notes">Anything Else We Should Know?</label>
+        <textarea name="notes" id="notes" rows="3"
+          placeholder="Allergies, favorite past beers, hard passes, flavors you absolutely can't stand…"></textarea>
+      </div>
+      <button type="button" class="submit-btn" id="submit">Save My Beer Preferences</button>
+    </div>
+
+  </form>
+</div>
+<script src="dpdf://localhost/index.js"></script>
+</body>
+</html>

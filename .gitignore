@@ -19,7 +19,7 @@ dist
 .claude/
 
 #ignore test form 
-testform/
+testform/*.zip
 
 #ignore test form packaging script 
 dpdf_worksheet.ps1
