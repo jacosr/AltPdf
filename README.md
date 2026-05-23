@@ -47,12 +47,12 @@ Use the fieldset tag to group properties into a nested object.  For example, if 
     Enter your name &ltbr/&gt;
     &lt;input name="name" /&gt;&lt;br/&gt;
     &lt;fieldset name="flavor_preferences"&gt;
-    What flavors do you like?
-    &lt;input name="flavors" type="checkbox" value="vanilla"&gtvanilla&ltbr/&gt;
-    &lt;input name="flavors" type="checkbox" value="chocolate"&gtchocolate&ltbr/&gt;
-    &lt;input name="flavors" type="checkbox" value="strawberry"&gtstrawberry&ltbr/&gt;
-    &lt;input name="flavors" type="checkbox" value="coffee"&gtcoffee&ltbr/&gt;
-    &lt;input id="submit" type="button" value="Submit" /&gt;
+      What flavors do you like?
+      &lt;input name="flavors" type="checkbox" value="vanilla"&gtvanilla&ltbr/&gt;
+      &lt;input name="flavors" type="checkbox" value="chocolate"&gtchocolate&ltbr/&gt;
+      &lt;input name="flavors" type="checkbox" value="strawberry"&gtstrawberry&ltbr/&gt;
+      &lt;input name="flavors" type="checkbox" value="coffee"&gtcoffee&ltbr/&gt;
+      &lt;input id="submit" type="button" value="Submit" /&gt;
     &lt;/fieldset&gt;
   &lt/form&gt;  
   </pre>
