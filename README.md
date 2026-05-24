@@ -41,7 +41,7 @@ That's it!  Now you can view your file with Dead PDF, and you can do with your f
   </pre>
 </p>
 <p>
-Use the fieldset tag to group properties into a nested object.  For example, if we take the above form, and add a fieldset tag:
+Sometimes, you may want to group properties into a nested object.  Use the fieldset tag to do that.  For example, if we take the above form, and add a fieldset tag:
   <pre>
   &lt;form name="testform"&gt;
     Enter your name &ltbr/&gt;
@@ -56,7 +56,7 @@ Use the fieldset tag to group properties into a nested object.  For example, if 
     &lt;/fieldset&gt;
   &lt/form&gt;  
   </pre>
-  Now the json collected from the form looks like this:
+  The json collected from the form now looks like this:
     <pre>
     {
       "testform":{
