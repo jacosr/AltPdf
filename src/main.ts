@@ -63,6 +63,11 @@ function signerFromCert(certPem: string): string {
     return m ? m[1].trim() : subject;
 }
 
+function issuerFromCert(certPem: string): string {
+    const issuer = new X509Certificate(certPem).issuer;
+    return issuer;
+}
+
 // ─── certificate selection ────────────────────────────────────────────────────
 
 async function selectCertificate(win: BrowserWindow): Promise<CertificateInfo | null> {
@@ -265,7 +270,7 @@ async function verifyTemplate(win: BrowserWindow): Promise<void> {
     const filesMatch = JSON.stringify(currentFiles) === JSON.stringify(cert.files);
     const ok = sigValid && filesMatch;
 
-    let detail = `Signed by: ${signerFromCert(cert.certPem)}\nSigned: ${new Date(cert.timestamp).toLocaleString()}`;
+    let detail = `Signed by: ${signerFromCert(cert.certPem)}\nSigned: ${new Date(cert.timestamp).toLocaleString()}\nIssuer: ${issuerFromCert(cert.certPem)}`;
     if (!filesMatch) detail += '\n\nThe template files do not match what was originally signed.';
     if (!sigValid)   detail += '\n\nThe certificate signature is invalid.';
 
@@ -301,7 +306,7 @@ async function verifyData(win: BrowserWindow): Promise<void> {
     const dataMatches = currentHash === sig.dataHash;
     const ok = sigValid && dataMatches;
 
-    let detail = `Signed by: ${signerFromCert(sig.certPem)}\nSigned: ${new Date(sig.timestamp).toLocaleString()}`;
+    let detail = `Signed by: ${signerFromCert(sig.certPem)}\nSigned: ${new Date(sig.timestamp).toLocaleString()}\nIssuer: ${issuerFromCert(sig.certPem)}`;
     if (!dataMatches) detail += '\n\nThe data does not match what was signed.';
     if (!sigValid)    detail += '\n\nThe data signature is invalid.';
 
