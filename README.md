@@ -8,7 +8,9 @@ Dead PDF fills these gaps.  It's basically a portable little website that you ca
 </p>
 <p>So instead of using expensive proprietary tools to create a PDF, you can use free web development tools to create a web page and distribute that instead.  Just about any technology you can use on a webpage (CSS, JavaScript frameworks, embedded multimedia, etc.) you can use with Dead PDF.  Here's how you create a Dead PDF:
 <ol >
-  <li>Create a little website locally. Make sure it all falls under one root directory and reference resources using relative URIs.</li>
+  <li>Create a little website locally. Make sure it all falls under one root directory</li>
+  <li>Make sure there is an index.html page in to root folder.  This is the initial page Dead PDF loads.</li>
+  <li>Reference resources using the dpdf protocol relative to localhost (e.g. "dpdf://localhost/image.jpg" to reference an image called "image.jpg" in the root folder)</li>
   <li>Zip up the directory into a zipped archive</li>
   <li>Change the extension from .zip to .dpdf</li>
 </ol>
