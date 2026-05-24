@@ -18,7 +18,7 @@ That's it!  Now you can view your file with Dead PDF, and you can do with your f
 </p>
 <h3>Forms with Dead PDF</h3>
 <p>Dead PDF can display any HTML page, including HTML forms.  If you are creating a form, Dead PDF gives you two default functions: one that collects user data into a json object, and one that binds the saved json object to the form.  You don't have to do any of that programming yourself, unless you want to.  If you do, you can easily override the default functions with your own custom ones.  Regardless of how you collect the data from the form, it will be saved to a file called data.json and saved to the dpdf zipped archive.</p>
-<p>By default, Dead PDF collects the data by mapping all of the form fields to a json object, and then it saves that json object to a file called data.json in the root directory.  The main object has one property, the name of the form.  The value of this one property is an object containing all the form data.  The name of each input element of the form corresponds to a property of this data object, and the values of the input elements become the values of the data object properties.  If there are two input elements with the same name, (e.g. in the case of checkboxes) then the value of the data object property becomes an array</p>
+<p>By default, Dead PDF collects the data by mapping all of the form fields to a json object  The main object has one property, the name of the form.  The value of this one property is an object containing all the form data.  The name of each input element of the form corresponds to a property of this data object, and the values of the input elements become the values of the data object properties.  If there are two input elements with the same name, (e.g. in the case of checkboxes) then the value of the data object property becomes an array</p>
 <p>For example, suppose you have the following form:<br/>
   <pre>
   &ltform name="testform"&gt
@@ -33,6 +33,7 @@ That's it!  Now you can view your file with Dead PDF, and you can do with your f
   &lt/form&gt  
   </pre>
   Now suppose you enter "Bob" for the name and check the vanilla and coffee checkboxes, the resulting data.json would contain:
+  <br/>
   <pre>
     {
       "testform":{
@@ -59,6 +60,7 @@ Sometimes, you may want to group properties into a nested object.  Use the field
   &lt/form&gt;  
   </pre>
   The json collected from the form now looks like this:
+  <br/>
     <pre>
     {
       "testform":{
@@ -71,3 +73,4 @@ Sometimes, you may want to group properties into a nested object.  Use the field
   </pre>
 
 </p>
+<p>When you open a dpdf file, Dead PDF looks for the data.json file.  If it is there, it will attempt to load the data automatically into the form.  You can override this default behavior with your own function, but if you use the default function to collect the data, then the default function to bind the data to the form will just work.</p>
