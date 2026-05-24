@@ -449,7 +449,7 @@ function createWindow() {
             nodeIntegration: false
         }
     });
-    win.loadFile('./src/renderer/index.html');
+    win.loadFile(path.join(__dirname, 'renderer/index.html'));
 }
 
 async function loadZipIntoMemory(filePath: string): Promise<void> {
