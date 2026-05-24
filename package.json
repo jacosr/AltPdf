@@ -7,7 +7,20 @@
     "copy": "cp src/renderer/*.html dist/renderer/",
     "build": "tsc && npm run copy",
     "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.altpdf.app",
+    "productName": "AltPDF",
+    "win": {
+      "target": "nsis"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ]
   },
   "keywords": [],
   "author": "Alan Jacobson",
