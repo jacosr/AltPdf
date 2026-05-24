@@ -33,7 +33,7 @@ That's it!  Now you can view your file with Dead PDF, and you can do with your f
   &lt/form&gt  
   </pre>
   Now suppose you enter "Bob" for the name and check the vanilla and coffee checkboxes, the resulting data.json would contain:
-  <br/>
+  <br/><br/>
   <pre>
     {
       "testform":{
@@ -60,7 +60,7 @@ Sometimes, you may want to group properties into a nested object.  Use the field
   &lt/form&gt;  
   </pre>
   The json collected from the form now looks like this:
-  <br/>
+  <br/><br/>
     <pre>
     {
       "testform":{
