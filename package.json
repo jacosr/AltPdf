@@ -13,6 +13,9 @@
   "build": {
     "appId": "com.altpdf.app",
     "productName": "AltPDF",
+    "directories": {
+      "output": "release"
+    },
     "win": {
       "target": "nsis"
     },
