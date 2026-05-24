@@ -21,6 +21,8 @@ release
 
 #ignore test form 
 testform/*.zip
+testform/index.zip
+testform/index.apdf
 
 #ignore test form packaging script 
 apdf_worksheet.ps1
