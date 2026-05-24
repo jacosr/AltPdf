@@ -73,4 +73,4 @@ Sometimes, you may want to group properties into a nested object.  Use the field
   </pre>
 
 </p>
-<p>When you open a apdf file, Alt PDF looks for the data.json file.  If it is there, it will attempt to load the data automatically into the form.  You can override this default behavior with your own function, but if you use the default function to collect the data, then the default function to bind the data to the form will just work.</p>
+<p>When you open a apdf file, Alt PDF looks for the data.json file.  If it is there, it will attempt to load the data automatically into the form.  You can override this default behavior with your own function, but if you use the default function to collect the data, then the default function to bind the data to the form will just work. The test form, in the testform directory, demonstrates how all of this works.</p>
