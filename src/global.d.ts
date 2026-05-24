@@ -2,7 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    deadpdf: {
+    altpdf: {
       openFile: () => Promise<string | null>;
       saveFile: () => Promise<void>;
       saveData: (data: any) => Promise<void>;

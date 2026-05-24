@@ -120,20 +120,20 @@ function _bindData(data: any): void {
     fill(form, formData);
 }
 
-contextBridge.exposeInMainWorld('deadpdf', {
+contextBridge.exposeInMainWorld('altpdf', {
 
     setGetFormData: (fn: () => any) => { _formDataCollector = fn; },
     setBindData: (fn: (data: any) => void) => { _bindDataOverride = fn; },
     getFormData: () => { return _getFormData(); },
-    openFile: () => ipcRenderer.invoke('open-dpdf'),
+    openFile: () => ipcRenderer.invoke('open-apdf'),
     saveFile: () => {
         console.log("Saving file...");
         const data = _getFormData();
         console.log("Form data to save:", data);
         
-        return ipcRenderer.invoke('save-dpdf', data);
+        return ipcRenderer.invoke('save-apdf', data);
     },
-    saveData: (data: any) => ipcRenderer.invoke('save-dpdf', data),
+    saveData: (data: any) => ipcRenderer.invoke('save-apdf', data),
     loadData: async () => {
         return await _loadData();
     },

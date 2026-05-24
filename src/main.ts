@@ -148,9 +148,9 @@ async function saveZipInPlace(win: BrowserWindow): Promise<boolean> {
     let savePath = currentFilePath;
     if (!savePath) {
         const result = await dialog.showSaveDialog(win, {
-            title: 'Save DeadPDF File',
-            defaultPath: 'document.dpdf',
-            filters: [{ name: 'DeadPDF Files', extensions: ['dpdf'] }]
+            title: 'Save AltPDF File',
+            defaultPath: 'document.apdf',
+            filters: [{ name: 'AltPDF Files', extensions: ['apdf'] }]
         });
         if (!result.filePath) return false;
         savePath = result.filePath;
@@ -326,14 +326,14 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
                     const filePath = await selectFilePath();
                     if (!filePath) return;
                     await loadZipIntoMemory(filePath).catch(err => console.error(err));
-                    await (browserWindow as BrowserWindow).loadURL('dpdf://localhost/index.html');
+                    await (browserWindow as BrowserWindow).loadURL('apdf://localhost/index.html');
                 }
             },
             {
                 label: 'Save',
                 click: async (_item, browserWindow) => {
                     if (!browserWindow) return;
-                    await (browserWindow as BrowserWindow).webContents.executeJavaScript('window.deadpdf.saveFile()');
+                    await (browserWindow as BrowserWindow).webContents.executeJavaScript('window.altpdf.saveFile()');
                 }
             },
             { type: 'separator' },
@@ -378,11 +378,11 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
 // ─── app setup ────────────────────────────────────────────────────────────────
 
 protocol.registerSchemesAsPrivileged([
-    { scheme: 'dpdf', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+    { scheme: 'apdf', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ]);
 
 app.whenReady().then(() => {
-    protocol.handle('dpdf', async (request) => {
+    protocol.handle('apdf', async (request) => {
         const { pathname } = new URL(request.url);
         const filePath = pathname.slice(1);
         const data = await getFileFromZip(filePath);
@@ -406,15 +406,15 @@ app.on('window-all-closed', () => {
 
 // ─── IPC handlers ─────────────────────────────────────────────────────────────
 
-ipcMain.handle('open-dpdf', async (event) => {
+ipcMain.handle('open-apdf', async (event) => {
     const filePath = await selectFilePath();
     if (!filePath) return null;
     await loadZipIntoMemory(filePath).catch(err => console.error(err));
-    BrowserWindow.fromWebContents(event.sender)?.loadURL('dpdf://localhost/index.html');
+    BrowserWindow.fromWebContents(event.sender)?.loadURL('apdf://localhost/index.html');
     return filePath;
 });
 
-ipcMain.handle('save-dpdf', async (_event, data) => {
+ipcMain.handle('save-apdf', async (_event, data) => {
     await saveDataToFile(data).catch(err => console.error(err));
 });
 
@@ -479,9 +479,9 @@ function getMimeType(filePath: string): string {
 
 async function selectFilePath(): Promise<string | null> {
     const result = await dialog.showOpenDialog({
-        title: 'Open DeadPDF File',
+        title: 'Open AltPDF File',
         filters: [
-            { name: 'DeadPDF Files', extensions: ['dpdf', 'zip'] },
+            { name: 'AltPDF Files', extensions: ['apdf', 'zip'] },
             { name: 'All files', extensions: ['*'] }
         ],
         properties: ['openFile']
@@ -505,10 +505,10 @@ async function saveAsDataToFile(data: any): Promise<void> {
     zip.file('data.json', JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const { filePath } = await dialog.showSaveDialog({
-        title: 'Save DeadPDF File',
-        defaultPath: 'deadpdf_output.dpdf',
+        title: 'Save AltPDF File',
+        defaultPath: 'altpdf_output.apdf',
         filters: [
-            { name: 'DeadPDF Files', extensions: ['dpdf'] },
+            { name: 'AltPDF Files', extensions: ['apdf'] },
             { name: 'All files', extensions: ['*'] }
         ]
     });
