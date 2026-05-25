@@ -420,7 +420,12 @@ ipcMain.handle('open-apdf', async (event) => {
 });
 
 ipcMain.handle('save-apdf', async (_event, data) => {
-    await saveDataToFile(data).catch(err => console.error(err));
+    try {
+        return await saveDataToFile(data);
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
 });
 
 ipcMain.handle('sign-template', async (event) => {
@@ -494,15 +499,16 @@ async function selectFilePath(): Promise<string | null> {
     return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
 }
 
-async function saveDataToFile(data: any): Promise<void> {
-    if (!zip) return;
+async function saveDataToFile(data: any): Promise<boolean> {
+    if (!zip) return false;
     zip.file('data.json', JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const filePath = currentFilePath;
     if (filePath) {
         fs.writeFileSync(filePath, content);
-        currentFilePath = filePath;
+        return true;
     }
+    return false;
 }
 
 async function saveAsDataToFile(data: any): Promise<void> {

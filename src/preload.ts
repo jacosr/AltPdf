@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 let _formDataCollector: (() => any) | null = null;
 let _bindDataOverride: ((data: any) => void) | null = null;
+let _displaySaveResultOverride: ((result: boolean) => void) | null = null;
 
 function _getFormData(): any {
     if (_formDataCollector) return _formDataCollector();
@@ -120,20 +121,51 @@ function _bindData(data: any): void {
     fill(form, formData);
 }
 
+function _displaySaveResult(result: boolean): void {
+    if (_displaySaveResultOverride) { _displaySaveResultOverride(result); return; }
+
+    const toast = document.createElement('div');
+    toast.textContent = result ? 'Saved' : 'Save failed';
+    Object.assign(toast.style, {
+        position:     'fixed',
+        bottom:       '24px',
+        right:        '24px',
+        zIndex:       '2147483647',
+        padding:      '10px 18px',
+        borderRadius: '8px',
+        fontSize:     '13px',
+        fontWeight:   '600',
+        color:        '#fff',
+        background:   result ? '#22c55e' : '#ef4444',
+        boxShadow:    '0 4px 12px rgba(0,0,0,0.25)',
+        opacity:      '1',
+        transition:   'opacity 0.4s ease',
+        pointerEvents: 'none',
+    });
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    setTimeout(() => { toast.remove(); }, 2400);
+}
+
 contextBridge.exposeInMainWorld('altpdf', {
 
     setGetFormData: (fn: () => any) => { _formDataCollector = fn; },
     setBindData: (fn: (data: any) => void) => { _bindDataOverride = fn; },
+    setDisplaySaveResult: (fn: (result: boolean) => void) => { _displaySaveResultOverride = fn; },
     getFormData: () => { return _getFormData(); },
     openFile: () => ipcRenderer.invoke('open-apdf'),
-    saveFile: () => {
-        console.log("Saving file...");
-        const data = _getFormData();
-        console.log("Form data to save:", data);
-        
-        return ipcRenderer.invoke('save-apdf', data);
+    saveFile: async () => {
+        const data = _getFormData();     
+        let result = await ipcRenderer.invoke('save-apdf', data);
+        console.log("Save result:", result);
+        _displaySaveResult(result);
     },
-    saveData: (data: any) => ipcRenderer.invoke('save-apdf', data),
+    saveData: async (data: any) => {
+        let result = await ipcRenderer.invoke('save-apdf', data);
+        _displaySaveResult(result);
+    },
     loadData: async () => {
         return await _loadData();
     },

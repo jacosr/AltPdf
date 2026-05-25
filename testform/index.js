@@ -1,48 +1,48 @@
-function collectFormData(form) {
-    const SKIP_TYPES = new Set(['submit', 'button', 'reset', 'image']);
+// function collectFormData(form) {
+//     const SKIP_TYPES = new Set(['submit', 'button', 'reset', 'image']);
 
-    function addValue(obj, key, value) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            if (!Array.isArray(obj[key])) obj[key] = [obj[key]];
-            obj[key].push(value);
-        } else {
-            obj[key] = value;
-        }
-    }
+//     function addValue(obj, key, value) {
+//         if (Object.prototype.hasOwnProperty.call(obj, key)) {
+//             if (!Array.isArray(obj[key])) obj[key] = [obj[key]];
+//             obj[key].push(value);
+//         } else {
+//             obj[key] = value;
+//         }
+//     }
 
-    function collect(container) {
-        const result = {};
-        function walk(node) {
-            for (const child of node.children) {
-                if (child.tagName === 'FIELDSET') {
-                    const name = child.getAttribute('name');
-                    if (name) {
-                        addValue(result, name, collect(child));
-                    } else {
-                        walk(child);
-                    }
-                } else if (child.matches('input, textarea, select')) {
-                    const name = child.getAttribute('name');
-                    if (name && !SKIP_TYPES.has(child.type)) {
-                        if ((child.type === 'checkbox' || child.type === 'radio') && !child.checked) continue;
-                        if (child.type === 'select-multiple') {
-                            for (const opt of child.selectedOptions) addValue(result, name, opt.value);
-                        } else {
-                            addValue(result, name, child.value);
-                        }
-                    }
-                } else {
-                    walk(child);
-                }
-            }
-        }
-        walk(container);
-        return result;
-    }
+//     function collect(container) {
+//         const result = {};
+//         function walk(node) {
+//             for (const child of node.children) {
+//                 if (child.tagName === 'FIELDSET') {
+//                     const name = child.getAttribute('name');
+//                     if (name) {
+//                         addValue(result, name, collect(child));
+//                     } else {
+//                         walk(child);
+//                     }
+//                 } else if (child.matches('input, textarea, select')) {
+//                     const name = child.getAttribute('name');
+//                     if (name && !SKIP_TYPES.has(child.type)) {
+//                         if ((child.type === 'checkbox' || child.type === 'radio') && !child.checked) continue;
+//                         if (child.type === 'select-multiple') {
+//                             for (const opt of child.selectedOptions) addValue(result, name, opt.value);
+//                         } else {
+//                             addValue(result, name, child.value);
+//                         }
+//                     }
+//                 } else {
+//                     walk(child);
+//                 }
+//             }
+//         }
+//         walk(container);
+//         return result;
+//     }
 
-    const formName = form.getAttribute('name') || form.id || 'form';
-    return { [formName]: collect(form) };
-}
+//     const formName = form.getAttribute('name') || form.id || 'form';
+//     return { [formName]: collect(form) };
+// }
 
 // Register our collector so the preload uses the fieldset-aware version
 //window.altpdf.setGetFormData(function() {
