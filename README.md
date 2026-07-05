@@ -77,7 +77,7 @@ Sometimes, you may want to group properties into a nested object.  Use the field
 
 <table>
   <tr>
-<td>Code</td><td>MS</td><td>Iname</td><td>Scenario</td>
+<td>Code</td><td>MS</td><td>Iname</td>
   </tr><tr>
 <td>0</td><td>ERROR_SUCCESS</td><td>Installation successful	</td>
   </tr><tr>
