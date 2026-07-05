@@ -74,3 +74,25 @@ Sometimes, you may want to group properties into a nested object.  Use the field
 
 </p>
 <p>When you open a apdf file, Alt PDF looks for the data.json file.  If it is there, it will attempt to load the data automatically into the form.  You can override this default behavior with your own function, but if you use the default function to collect the data, then the default function to bind the data to the form will just work. The test form, in the testform directory, demonstrates how all of this works.</p>
+
+<table>
+  <tr>
+<td>Code</td><td>MS</td><td>Iname</td><td>Scenario</td>
+  </tr><tr>
+<td>0</td><td>ERROR_SUCCESS</td><td>Installation</td><td>successful	</td>
+  </tr><tr>
+<td>112</td><td>ERROR_DISK_FULL</td><td>Disk space is full	</td>
+  </tr><tr>
+<td>1602</td><td>ERROR_INSTALL_USEREXIT</td><td>Cancelled by user	</td>
+  </tr><tr>
+<td>1612</td><td>ERROR_INSTALL_SOURCE_ABSENT</td><td>Network failure	</td>
+  </tr><tr>
+<td>1618</td><td>ERROR_INSTALL_ALREADY_RUNNING</td><td>Installation already in progress	</td>
+  </tr><tr>
+<td>1625</td><td>ERROR_INSTALL_PACKAGE_REJECTED</td><td>Package rejected	</td>
+  </tr><tr>
+<td>1638</td><td>ERROR_PRODUCT_VERSION</td><td>Application already exists	</td>
+  </tr><tr>
+<td>3010</td><td>ERROR_SUCCESS_REBOOT_REQUIRED</td><td>Reboot required	</td>
+  </tr>
+</table>
