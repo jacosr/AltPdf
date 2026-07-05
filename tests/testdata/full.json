@@ -1,0 +1,41 @@
+{
+  "beer_survey": {
+    "personal": {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com",
+      "age": "34",
+      "phone": "+1 555 123 4567"
+    },
+    "taste_profile": {
+      "bitterness": "65",
+      "sweetness": "4",
+      "body": "4",
+      "carbonation": "high",
+      "preferred_color": "#7a4a1e",
+      "flavor_notes": {
+        "flavors": ["citrus", "malty", "smoky"]
+      }
+    },
+    "context": {
+      "occasion": "dining",
+      "frequency": "weekly",
+      "preferred_time": "19:30",
+      "last_great_beer": "2026-05-01",
+      "companions": {
+        "drink_with": "friends",
+        "group_size": "6"
+      },
+      "preferred_settings": ["home", "outdoors", "concert"]
+    },
+    "advanced": {
+      "abv_preference": "7.5",
+      "preferred_region": "belgian",
+      "craft_preference": "independent",
+      "appearance": {
+        "clarity": "hazy",
+        "head_size": "generous"
+      }
+    },
+    "notes": "Loves saisons."
+  }
+}

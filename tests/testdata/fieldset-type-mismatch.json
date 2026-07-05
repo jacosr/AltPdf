@@ -1,0 +1,8 @@
+{
+  "beer_survey": {
+    "advanced": ["not", "an", "object"],
+    "personal": {
+      "name": "Type Mismatch"
+    }
+  }
+}

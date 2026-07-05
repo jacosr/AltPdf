@@ -8,7 +8,7 @@
     "build": "tsc && npm run copy",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "build": {
     "appId": "com.altpdf.app",
@@ -30,10 +30,14 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.10",
     "@types/node-forge": "^1.3.14",
     "electron": "^40.0.0",
     "electron-builder": "^26.8.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },

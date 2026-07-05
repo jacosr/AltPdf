@@ -1,0 +1,41 @@
+{
+  "not_a_real_form": {
+    "personal": {
+      "name": "Fallback Test",
+      "email": "fallback@example.com",
+      "age": "22",
+      "phone": ""
+    },
+    "taste_profile": {
+      "bitterness": "10",
+      "sweetness": "2",
+      "body": "1",
+      "carbonation": "still",
+      "preferred_color": "#111111",
+      "flavor_notes": {
+        "flavors": ["sour", "earthy"]
+      }
+    },
+    "context": {
+      "occasion": "social",
+      "frequency": "daily",
+      "preferred_time": "08:00",
+      "last_great_beer": "2026-01-01",
+      "companions": {
+        "drink_with": "mixed",
+        "group_size": "3"
+      },
+      "preferred_settings": ["pub", "sports"]
+    },
+    "advanced": {
+      "abv_preference": "4.5",
+      "preferred_region": "german",
+      "craft_preference": "regional",
+      "appearance": {
+        "clarity": "opaque",
+        "head_size": "minimal"
+      }
+    },
+    "notes": "Fallback works"
+  }
+}

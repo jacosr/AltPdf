@@ -1,0 +1,41 @@
+{
+  "beer_survey": {
+    "personal": {
+      "name": "Grace Hopper",
+      "email": "grace@example.com",
+      "age": "45",
+      "phone": ""
+    },
+    "taste_profile": {
+      "bitterness": "20",
+      "sweetness": "8",
+      "body": "2",
+      "carbonation": "still",
+      "preferred_color": "#f2c14e",
+      "flavor_notes": {
+        "flavors": "chocolate"
+      }
+    },
+    "context": {
+      "occasion": "casual",
+      "frequency": "monthly",
+      "preferred_time": "12:00",
+      "last_great_beer": "",
+      "companions": {
+        "drink_with": "solo",
+        "group_size": "1"
+      },
+      "preferred_settings": "restaurant"
+    },
+    "advanced": {
+      "abv_preference": "3",
+      "preferred_region": "",
+      "craft_preference": "any",
+      "appearance": {
+        "clarity": "clear",
+        "head_size": "none"
+      }
+    },
+    "notes": ""
+  }
+}

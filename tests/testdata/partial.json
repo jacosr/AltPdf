@@ -1,0 +1,10 @@
+{
+  "beer_survey": {
+    "personal": {
+      "name": "Partial Test"
+    },
+    "context": {
+      "occasion": "special"
+    }
+  }
+}
