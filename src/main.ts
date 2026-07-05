@@ -343,6 +343,17 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
             },
             { type: 'separator' },
             {
+                label: 'Print',
+                accelerator: 'CmdOrCtrl+P',
+                click: (_item, browserWindow) => {
+                    if (!browserWindow) return;
+                    (browserWindow as BrowserWindow).webContents.print({}, (success, errorType) => {
+                        if (!success && errorType) console.error('Print failed:', errorType);
+                    });
+                }
+            },
+            { type: 'separator' },
+            {
                 label: 'Sign Template',
                 click: async (_item, browserWindow) => {
                     if (browserWindow) await signTemplate(browserWindow as BrowserWindow);
