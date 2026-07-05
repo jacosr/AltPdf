@@ -79,7 +79,7 @@ Sometimes, you may want to group properties into a nested object.  Use the field
   <tr>
 <td>Code</td><td>MS</td><td>Iname</td><td>Scenario</td>
   </tr><tr>
-<td>0</td><td>ERROR_SUCCESS</td><td>Installation</td><td>successful	</td>
+<td>0</td><td>ERROR_SUCCESS</td><td>Installation successful	</td>
   </tr><tr>
 <td>112</td><td>ERROR_DISK_FULL</td><td>Disk space is full	</td>
   </tr><tr>
