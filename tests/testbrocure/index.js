@@ -98,3 +98,8 @@
         confirmation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 })();
+
+// Submit
+document.getElementById('submit').addEventListener('click', async function() {
+    await window.altpdf.saveFile();
+});
