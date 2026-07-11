@@ -17,8 +17,20 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": "appx"
     },
+    "appx": {
+      "identityName": "AlanJacobson.AltPdf",
+      "publisher": "CN=AlanJacobson, O=jacosr, C=US"
+    },
+    "fileAssociations": [
+      {
+        "ext": "apdf",
+        "name": "AltPDF File",
+        "description": "AltPDF Form Document",
+        "role": "Editor"
+      }
+    ],
     "files": [
       "dist/**/*",
       "node_modules/**/*",

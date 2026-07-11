@@ -10,6 +10,23 @@ let currentFilePath: string | null = null;
 let _promptResolve: ((value: string | null) => void) | null = null;
 let _promptWindow: BrowserWindow | null = null;
 
+// Windows launches AltPDF.exe with the double-clicked file's path as a command-line
+// argument, both on a cold start and (via 'second-instance') when a window is already open.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (_event, argv) => {
+        const win = BrowserWindow.getAllWindows()[0];
+        if (!win) return;
+        if (win.isMinimized()) win.restore();
+        win.focus();
+
+        const filePath = getApdfPathFromArgv(argv);
+        if (filePath) openApdfFile(win, filePath).catch(err => console.error(err));
+    });
+}
+
 // Files excluded when hashing the template
 const SIGN_EXCLUSIONS = new Set(['template-certificate.json', 'data-signature.json', 'data.json']);
 
@@ -330,8 +347,7 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
                     if (!browserWindow) return;
                     const filePath = await selectFilePath();
                     if (!filePath) return;
-                    await loadZipIntoMemory(filePath).catch(err => console.error(err));
-                    await (browserWindow as BrowserWindow).loadURL('apdf://localhost/index.html');
+                    await openApdfFile(browserWindow as BrowserWindow, filePath).catch(err => console.error(err));
                 }
             },
             {
@@ -397,19 +413,33 @@ protocol.registerSchemesAsPrivileged([
     { scheme: 'apdf', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ]);
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     protocol.handle('apdf', async (request) => {
         const { pathname } = new URL(request.url);
         const filePath = pathname.slice(1);
         const data = await getFileFromZip(filePath);
+        // Every open .apdf file serves its pages from this same apdf://localhost/...
+        // URL space, so without this, Chromium's HTTP cache would keep serving
+        // whichever file's CSS/JS it first fetched instead of the currently loaded one.
         if (data) {
-            return new Response(data.toString(), { headers: { 'Content-Type': getMimeType(filePath) } });
+            return new Response(data.toString(), {
+                headers: { 'Content-Type': getMimeType(filePath), 'Cache-Control': 'no-store' }
+            });
         }
-        return new Response(`Not found: ${filePath}`, { status: 404, headers: { 'Content-Type': 'text/plain' } });
+        return new Response(`Not found: ${filePath}`, {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }
+        });
     });
 
     Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
     createWindow();
+
+    const initialFilePath = getApdfPathFromArgv(process.argv);
+    if (initialFilePath) {
+        const win = BrowserWindow.getAllWindows()[0];
+        if (win) await openApdfFile(win, initialFilePath).catch(err => console.error(err));
+    }
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -425,8 +455,8 @@ app.on('window-all-closed', () => {
 ipcMain.handle('open-apdf', async (event) => {
     const filePath = await selectFilePath();
     if (!filePath) return null;
-    await loadZipIntoMemory(filePath).catch(err => console.error(err));
-    BrowserWindow.fromWebContents(event.sender)?.loadURL('apdf://localhost/index.html');
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) await openApdfFile(win, filePath).catch(err => console.error(err));
     return filePath;
 });
 
@@ -477,6 +507,15 @@ async function loadZipIntoMemory(filePath: string): Promise<void> {
     const buffer = fs.readFileSync(filePath);
     zip = await JSZip.loadAsync(buffer);
     currentFilePath = filePath;
+}
+
+async function openApdfFile(win: BrowserWindow, filePath: string): Promise<void> {
+    await loadZipIntoMemory(filePath);
+    await win.loadURL('apdf://localhost/index.html');
+}
+
+function getApdfPathFromArgv(argv: string[]): string | null {
+    return argv.find(arg => arg.toLowerCase().endsWith('.apdf')) ?? null;
 }
 
 async function getFileFromZip(filePath: string): Promise<Buffer | null> {
