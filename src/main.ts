@@ -27,8 +27,13 @@ if (!gotSingleInstanceLock) {
     });
 }
 
+// Names of the mutable files inside a .apdf archive
+const TEMPLATE_SIGNATURE_FILE = 'template-signature.json';
+const DATA_SIGNATURE_FILE = 'data-signature.json';
+const DATA_FILE = 'data.json';
+
 // Files excluded when hashing the template
-const SIGN_EXCLUSIONS = new Set(['template-certificate.json', 'data-signature.json', 'data.json']);
+const SIGN_EXCLUSIONS = new Set([TEMPLATE_SIGNATURE_FILE, DATA_SIGNATURE_FILE, DATA_FILE]);
 
 interface TemplateCertificate {
     version: number;
@@ -55,6 +60,28 @@ interface CertificateInfo {
 }
 
 // ─── crypto helpers ───────────────────────────────────────────────────────────
+
+// Recursively sorts object keys (by UTF-16 code unit, matching RFC 8785) so that
+// semantically identical JSON hashes/signs the same regardless of key order.
+function canonicalizeValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+        return value.map(canonicalizeValue);
+    }
+    if (value !== null && typeof value === 'object') {
+        const sorted: Record<string, unknown> = {};
+        for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+            sorted[key] = canonicalizeValue((value as Record<string, unknown>)[key]);
+        }
+        return sorted;
+    }
+    return value;
+}
+
+function toCanonicalJson(input: Uint8Array<ArrayBufferLike>): Uint8Array<ArrayBufferLike> {
+    const parsed = JSON.parse(new TextDecoder('utf-8').decode(input));
+    const canonicalText = JSON.stringify(canonicalizeValue(parsed));
+    return new TextEncoder().encode(canonicalText);
+}
 
 function hashContent(content: Buffer | string): string {
     return createHash('sha256').update(content).digest('hex');
@@ -199,7 +226,7 @@ async function hashZipFiles(exclusions: Set<string>): Promise<Record<string, str
 
 async function signTemplate(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    if (zip.file('template-certificate.json')) {
+    if (zip.file(TEMPLATE_SIGNATURE_FILE)) {
         dialog.showMessageBox(win, {
             type: 'warning', title: 'Already Signed',
             message: 'This template has already been signed and cannot be re-signed.'
@@ -212,15 +239,17 @@ async function signTemplate(win: BrowserWindow): Promise<void> {
 
     const files = await hashZipFiles(SIGN_EXCLUSIONS);
     const timestamp = new Date().toISOString();
-    const payload = JSON.stringify({ files, timestamp });
-
+    const data = JSON.stringify({ files, timestamp });
+    const canonicalData = toCanonicalJson(new TextEncoder().encode(data));
+    const payload = canonicalData.toString();
+    
     const cert: TemplateCertificate = {
         version: 1, signer: certInfo.signer, timestamp,
         certPem: certInfo.certPem, files,
         signature: signPayload(payload, certInfo.privateKeyPem)
     };
 
-    zip.file('template-certificate.json', JSON.stringify(cert, null, 2));
+    zip.file(TEMPLATE_SIGNATURE_FILE, JSON.stringify(cert, null, 2));
     if (await saveZipInPlace(win)) {
         dialog.showMessageBox(win, {
             type: 'info', title: 'Template Signed',
@@ -232,12 +261,12 @@ async function signTemplate(win: BrowserWindow): Promise<void> {
 
 async function signData(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    const dataFile = zip.file('data.json');
+    const dataFile = zip.file(DATA_FILE);
     if (!dataFile) {
         dialog.showMessageBox(win, { type: 'warning', message: 'No data found. Save the form first.' });
         return;
     }
-    if (zip.file('data-signature.json')) {
+    if (zip.file(DATA_SIGNATURE_FILE)) {
         const { response } = await dialog.showMessageBox(win, {
             type: 'question', buttons: ['Re-sign', 'Cancel'],
             message: 'Data is already signed. Replace the existing signature?'
@@ -249,7 +278,8 @@ async function signData(win: BrowserWindow): Promise<void> {
     if (!certInfo) return;
 
     const dataContent = await dataFile.async('uint8array');
-    const dataHash = hashContent(Buffer.from(dataContent));
+    const canonicalData = toCanonicalJson(dataContent);
+    const dataHash = hashContent(Buffer.from(canonicalData));
     const timestamp = new Date().toISOString();
     const payload = JSON.stringify({ dataHash, timestamp });
 
@@ -259,7 +289,7 @@ async function signData(win: BrowserWindow): Promise<void> {
         signature: signPayload(payload, certInfo.privateKeyPem)
     };
 
-    zip.file('data-signature.json', JSON.stringify(sig, null, 2));
+    zip.file(DATA_SIGNATURE_FILE, JSON.stringify(sig, null, 2));
     if (await saveZipInPlace(win)) {
         dialog.showMessageBox(win, {
             type: 'info', title: 'Data Signed',
@@ -271,7 +301,7 @@ async function signData(win: BrowserWindow): Promise<void> {
 
 async function verifyTemplate(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    const certFile = zip.file('template-certificate.json');
+    const certFile = zip.file(TEMPLATE_SIGNATURE_FILE);
     if (!certFile) {
         dialog.showMessageBox(win, { type: 'info', message: 'This template has not been signed.' });
         return;
@@ -280,7 +310,10 @@ async function verifyTemplate(win: BrowserWindow): Promise<void> {
     const cert: TemplateCertificate = JSON.parse(await certFile.async('text'));
     const currentFiles = await hashZipFiles(SIGN_EXCLUSIONS);
 
-    const payload = JSON.stringify({ files: cert.files, timestamp: cert.timestamp });
+    const verifyData = JSON.stringify({ files: cert.files, timestamp: cert.timestamp });
+    const canonicalData = toCanonicalJson(new TextEncoder().encode(verifyData));
+    const payload = canonicalData.toString();
+
     let sigValid = false;
     try { sigValid = verifyWithCert(payload, cert.signature, cert.certPem); } catch { /* tampered cert */ }
 
@@ -301,20 +334,21 @@ async function verifyTemplate(win: BrowserWindow): Promise<void> {
 
 async function verifyData(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    const sigFile = zip.file('data-signature.json');
+    const sigFile = zip.file(DATA_SIGNATURE_FILE);
     if (!sigFile) {
         dialog.showMessageBox(win, { type: 'info', message: 'The data in this file has not been signed.' });
         return;
     }
-    const dataFile = zip.file('data.json');
+    const dataFile = zip.file(DATA_FILE);
     if (!dataFile) {
-        dialog.showMessageBox(win, { type: 'error', message: 'No data.json found.' });
+        dialog.showMessageBox(win, { type: 'error', message: `No ${DATA_FILE} found.` });
         return;
     }
 
     const sig: DataSignature = JSON.parse(await sigFile.async('text'));
     const dataContent = await dataFile.async('uint8array');
-    const currentHash = hashContent(Buffer.from(dataContent));
+    const canonicalData = toCanonicalJson(dataContent);
+    const currentHash = hashContent(Buffer.from(canonicalData));
 
     const payload = JSON.stringify({ dataHash: sig.dataHash, timestamp: sig.timestamp });
     let sigValid = false;
@@ -551,7 +585,7 @@ async function selectFilePath(): Promise<string | null> {
 
 async function saveDataToFile(data: any): Promise<boolean> {
     if (!zip) return false;
-    zip.file('data.json', JSON.stringify(data, null, 2));
+    zip.file(DATA_FILE, JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const filePath = currentFilePath;
     if (filePath) {
@@ -563,7 +597,7 @@ async function saveDataToFile(data: any): Promise<boolean> {
 
 async function saveAsDataToFile(data: any): Promise<void> {
     if (!zip) return;
-    zip.file('data.json', JSON.stringify(data, null, 2));
+    zip.file(DATA_FILE, JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const { filePath } = await dialog.showSaveDialog({
         title: 'Save AltPDF File',

@@ -1,6 +1,6 @@
 {
   "name": "altpdf",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "",
   "main": "./dist/main.js",
   "scripts": {
@@ -21,7 +21,16 @@
     },
     "appx": {
       "identityName": "AlanJacobson.AltPdf",
-      "publisher": "CN=AlanJacobson, O=jacosr, C=US"
+      "publisher": "CN=B8E4AFE7-F7FC-4C7D-A5A5-1844BFD15EAB"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "target": ["mas"]
+    },
+    "mas": {
+      "entitlements": "build/entitlements.mas.plist",
+      "entitlementsInherit": "build/entitlements.mas.inherit.plist"
     },
     "fileAssociations": [
       {
