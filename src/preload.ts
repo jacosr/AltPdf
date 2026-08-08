@@ -176,7 +176,8 @@ contextBridge.exposeInMainWorld('altpdf', {
     signData:       () => ipcRenderer.invoke('sign-data'),
     verifyTemplate: () => ipcRenderer.invoke('verify-template'),
     verifyData:     () => ipcRenderer.invoke('verify-data'),
-}); 
+    verifyAll:      () => ipcRenderer.invoke('verify-all'),
+});
 
 
 

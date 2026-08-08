@@ -15,6 +15,7 @@ declare global {
       signData:       () => Promise<void>;
       verifyTemplate: () => Promise<void>;
       verifyData:     () => Promise<void>;
+      verifyAll:      () => Promise<void>;
     };
   }
 }
