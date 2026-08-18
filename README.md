@@ -98,3 +98,6 @@ Sometimes, you may want to group properties into a nested object.  Use the field
 <td>3010</td><td>ERROR_SUCCESS_REBOOT_REQUIRED</td><td>Reboot required	</td>
   </tr>
 </table>
+
+<h3>Other links</h3>
+[Branding Thesis](BrandingThesis.md)
