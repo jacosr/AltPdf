@@ -33,7 +33,7 @@ The AltPdf app icon is permanently anchored to the following technical and color
   * RGB: `rgb(0, 0, 0)`
 
 ### 3.2 Structural Component Analysis
-The standalone app icon is a custom vector asset comprised of sharp, intersecting, multi-layered linear triangles forming a central diamond lattice. While the geometry abstractly outlines an uppercase "A" (denoting "Alternative"), its phonetic and visual layout is entirely distinct:
+The standalone app icon is a custom vector asset comprised of sharp, intersecting, trapezoids forming a central diamond lattice. While the geometry abstractly outlines an uppercase "A" (denoting "Alternative"), its phonetic and visual layout is entirely distinct:
 1. **No Solid Fills:** The icon relies exclusively on thin-line vector paths.
 2. **Sharp Angularity:** All intersecting vertices are set to precise, non-rounded angles, completely rejecting the organic curves utilized by Adobe.
 3. **Permanent Dark-Mode Alignment:** The icon is structurally dependent on a high-contrast dark background to signify its modern development framework.
