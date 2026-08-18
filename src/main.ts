@@ -27,13 +27,44 @@ if (!gotSingleInstanceLock) {
     });
 }
 
-// Names of the mutable files inside a .apdf archive
+// Names of the mutable files inside a .apdf archive.
+// Data is a numbered sequence of contributions (data1.json, data2.json, ...) rather
+// than a single file, so multiple participants can each sign their own step.
 const TEMPLATE_SIGNATURE_FILE = 'template-signature.json';
-const DATA_SIGNATURE_FILE = 'data-signature.json';
-const DATA_FILE = 'data.json';
+const DATA_TEMP_FILE = 'data-temp.json';
+const DATA_STEP_PATTERN = /^data(\d+)\.json$/;
+const DATA_STEP_SIGNATURE_PATTERN = /^data(\d+)-signature\.json$/;
 
-// Files excluded when hashing the template
-const SIGN_EXCLUSIONS = new Set([TEMPLATE_SIGNATURE_FILE, DATA_SIGNATURE_FILE, DATA_FILE]);
+function dataStepFile(step: number): string { return `data${step}.json`; }
+function dataStepSignatureFile(step: number): string { return `data${step}-signature.json`; }
+
+// True for any file that isn't part of the immutable template.
+function isMutableFile(filename: string): boolean {
+    return filename === DATA_TEMP_FILE
+        || DATA_STEP_PATTERN.test(filename)
+        || DATA_STEP_SIGNATURE_PATTERN.test(filename);
+}
+
+// Excluded when hashing the template: its own signature file, plus everything mutable.
+function isExcludedFromTemplateHash(filename: string): boolean {
+    return filename === TEMPLATE_SIGNATURE_FILE || isMutableFile(filename);
+}
+
+// Step numbers with a data file and/or a signature file present, in ascending order.
+// Includes a step even if only one of the pair exists, so an orphaned signature (its
+// data file deleted) or an orphaned data file (its signature deleted) still gets
+// reported as tampering by checkDataSteps rather than silently skipped.
+function listDataSteps(): number[] {
+    if (!zip) return [];
+    const steps = new Set<number>();
+    for (const filename of Object.keys(zip.files)) {
+        const dataMatch = filename.match(DATA_STEP_PATTERN);
+        if (dataMatch) steps.add(parseInt(dataMatch[1], 10));
+        const sigMatch = filename.match(DATA_STEP_SIGNATURE_PATTERN);
+        if (sigMatch) steps.add(parseInt(sigMatch[1], 10));
+    }
+    return [...steps].sort((a, b) => a - b);
+}
 
 interface TemplateCertificate {
     version: number;
@@ -45,13 +76,15 @@ interface TemplateCertificate {
     signature: string;
 }
 
-interface DataSignature {
+interface DataStepSignature {
     version: number;
+    step: number;
     signer: string;
     timestamp: string;
     certPem: string;
     dataHash: string;
-    templateFilesHash: string | null;  // template's filesHash at the moment data was signed, for cross-checking
+    previousDataHash: string | null;   // dataHash of the step this one was built on top of — chains contributions together
+    templateFilesHash: string | null;  // template's filesHash at the moment this step was signed, for cross-checking
     signature: string;
 }
 
@@ -68,13 +101,16 @@ type TemplateVerifyResult =
         currentFilesHash: string;
       };
 
-type DataVerifyResult =
-    | { status: 'unsigned' }
-    | { status: 'missing-data' }
+type DataStepResult =
+    | { step: number; status: 'missing-signature' }  // the data file exists but its signature doesn't
+    | { step: number; status: 'missing-data' }        // the signature exists but its data file doesn't
     | {
+        step: number;
         status: 'checked';
         sigValid: boolean;
         dataMatch: boolean;
+        chainValid: boolean;   // this step's previousDataHash matches what the prior step actually signed
+        dataHash: string;
         signer: string;
         timestamp: string;
         issuer: string;
@@ -238,11 +274,11 @@ async function saveZipInPlace(win: BrowserWindow): Promise<boolean> {
     return true;
 }
 
-async function hashZipFiles(exclusions: Set<string>): Promise<Record<string, string>> {
+async function hashZipFiles(exclude: (filename: string) => boolean): Promise<Record<string, string>> {
     if (!zip) return {};
     const files: Record<string, string> = {};
     for (const filename of Object.keys(zip.files)) {
-        if (!exclusions.has(filename) && !zip.files[filename].dir) {
+        if (!exclude(filename) && !zip.files[filename].dir) {
             const content = await zip.files[filename].async('uint8array');
             files[filename] = hashContent(Buffer.from(content));
         }
@@ -277,7 +313,7 @@ async function signTemplate(win: BrowserWindow): Promise<void> {
     const certInfo = await selectCertificate(win);
     if (!certInfo) return;
 
-    const files = await hashZipFiles(SIGN_EXCLUSIONS);
+    const files = await hashZipFiles(isExcludedFromTemplateHash);
     const canonicalFiles = toCanonicalJson(new TextEncoder().encode(JSON.stringify(files)));
     const filesHash = hashContent(Buffer.from(canonicalFiles));
     const timestamp = new Date().toISOString();
@@ -301,24 +337,43 @@ async function signTemplate(win: BrowserWindow): Promise<void> {
 
 async function signData(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    const dataFile = zip.file(DATA_FILE);
-    if (!dataFile) {
+    const draftFile = zip.file(DATA_TEMP_FILE);
+    if (!draftFile) {
         dialog.showMessageBox(win, { type: 'warning', message: 'No data found. Save the form first.' });
         return;
-    }
-    if (zip.file(DATA_SIGNATURE_FILE)) {
-        const { response } = await dialog.showMessageBox(win, {
-            type: 'question', buttons: ['Re-sign', 'Cancel'],
-            message: 'Data is already signed. Replace the existing signature?'
-        });
-        if (response !== 0) return;
     }
 
     const certInfo = await selectCertificate(win);
     if (!certInfo) return;
 
-    const dataContent = await dataFile.async('uint8array');
-    const canonicalData = toCanonicalJson(dataContent);
+    const steps = listDataSteps();
+    const lastStep = steps.length ? steps[steps.length - 1] : null;
+
+    let targetStep: number;
+    if (lastStep !== null) {
+        const lastSigFile = zip.file(dataStepSignatureFile(lastStep));
+        const lastSig: DataStepSignature | null = lastSigFile
+            ? JSON.parse(await lastSigFile.async('text'))
+            : null;
+        // Compare full certificates, not display names — a CN string can be reused
+        // across different keys, but certPem can't collide between different signers.
+        const samePerson = lastSig !== null && lastSig.certPem === certInfo.certPem;
+        if (samePerson) {
+            const { response } = await dialog.showMessageBox(win, {
+                type: 'question', buttons: ['Update', 'Cancel'],
+                message: `Step ${lastStep} is your most recent contribution. Update it with the current data?`
+            });
+            if (response !== 0) return;
+            targetStep = lastStep;
+        } else {
+            targetStep = lastStep + 1;
+        }
+    } else {
+        targetStep = 1;
+    }
+
+    const draftContent = await draftFile.async('uint8array');
+    const canonicalData = toCanonicalJson(draftContent);
     const dataHash = hashContent(Buffer.from(canonicalData));
     const timestamp = new Date().toISOString();
 
@@ -329,19 +384,33 @@ async function signData(win: BrowserWindow): Promise<void> {
         ? (JSON.parse(await templateCertFile.async('text')) as TemplateCertificate).filesHash
         : null;
 
-    const payload = JSON.stringify({ dataHash, timestamp, templateFilesHash });
+    // Chain onto whatever step immediately precedes this slot, so tampering with an
+    // earlier contribution after this one was signed becomes detectable at verify time.
+    const previousStep = targetStep > 1 ? targetStep - 1 : null;
+    let previousDataHash: string | null = null;
+    if (previousStep !== null) {
+        const prevSigFile = zip.file(dataStepSignatureFile(previousStep));
+        if (prevSigFile) {
+            const prevSig: DataStepSignature = JSON.parse(await prevSigFile.async('text'));
+            previousDataHash = prevSig.dataHash;
+        }
+    }
 
-    const sig: DataSignature = {
-        version: 1, signer: certInfo.signer, timestamp,
-        certPem: certInfo.certPem, dataHash, templateFilesHash,
+    const payload = JSON.stringify({ dataHash, timestamp, templateFilesHash, previousDataHash });
+
+    const sig: DataStepSignature = {
+        version: 1, step: targetStep, signer: certInfo.signer, timestamp,
+        certPem: certInfo.certPem, dataHash, previousDataHash, templateFilesHash,
         signature: signPayload(payload, certInfo.privateKeyPem)
     };
 
-    zip.file(DATA_SIGNATURE_FILE, JSON.stringify(sig, null, 2));
+    zip.file(dataStepFile(targetStep), draftContent);
+    zip.file(dataStepSignatureFile(targetStep), JSON.stringify(sig, null, 2));
+
     if (await saveZipInPlace(win)) {
         dialog.showMessageBox(win, {
-            type: 'info', title: 'Data Signed',
-            message: '✓ Data signed successfully.',
+            type: 'info', title: 'Contribution Signed',
+            message: `✓ Step ${targetStep} signed successfully.`,
             detail: `Signed by: ${certInfo.signer}\nTime: ${new Date(timestamp).toLocaleString()}`
         });
     }
@@ -366,7 +435,7 @@ async function checkTemplate(): Promise<TemplateVerifyResult> {
     let sigValid = false;
     try { sigValid = verifyWithCert(payload, cert.signature, cert.certPem); } catch { /* tampered cert */ }
 
-    const currentFiles = await hashZipFiles(SIGN_EXCLUSIONS);
+    const currentFiles = await hashZipFiles(isExcludedFromTemplateHash);
     const changedFiles = diffFileHashes(cert.files, currentFiles);
 
     const canonicalCurrentFiles = toCanonicalJson(new TextEncoder().encode(JSON.stringify(currentFiles)));
@@ -381,32 +450,87 @@ async function checkTemplate(): Promise<TemplateVerifyResult> {
     };
 }
 
-// Recomputes and validates the data signature without showing any UI.
-async function checkData(): Promise<DataVerifyResult> {
-    if (!zip) return { status: 'unsigned' };
-    const sigFile = zip.file(DATA_SIGNATURE_FILE);
-    if (!sigFile) return { status: 'unsigned' };
-    const dataFile = zip.file(DATA_FILE);
-    if (!dataFile) return { status: 'missing-data' };
+// Recomputes and validates every signed data step, without showing any UI.
+async function checkDataSteps(): Promise<DataStepResult[]> {
+    if (!zip) return [];
+    const steps = listDataSteps();
+    const results: DataStepResult[] = [];
 
-    const sig: DataSignature = JSON.parse(await sigFile.async('text'));
-    const dataContent = await dataFile.async('uint8array');
-    const canonicalData = toCanonicalJson(dataContent);
-    const currentHash = hashContent(Buffer.from(canonicalData));
+    for (const step of steps) {
+        const dataFile = zip.file(dataStepFile(step));
+        const sigFile = zip.file(dataStepSignatureFile(step));
 
-    const payload = JSON.stringify({ dataHash: sig.dataHash, timestamp: sig.timestamp, templateFilesHash: sig.templateFilesHash });
-    let sigValid = false;
-    try { sigValid = verifyWithCert(payload, sig.signature, sig.certPem); } catch { /* tampered cert */ }
+        if (!sigFile) { results.push({ step, status: 'missing-signature' }); continue; }
+        if (!dataFile) { results.push({ step, status: 'missing-data' }); continue; }
 
-    const dataMatch = currentHash === sig.dataHash;
+        const sig: DataStepSignature = JSON.parse(await sigFile.async('text'));
+        const dataContent = await dataFile.async('uint8array');
+        const canonicalData = toCanonicalJson(dataContent);
+        const currentHash = hashContent(Buffer.from(canonicalData));
 
-    return {
-        status: 'checked', sigValid, dataMatch,
-        signer: signerFromCert(sig.certPem),
-        timestamp: sig.timestamp,
-        issuer: issuerFromCert(sig.certPem),
-        templateFilesHash: sig.templateFilesHash ?? null
-    };
+        const payload = JSON.stringify({
+            dataHash: sig.dataHash, timestamp: sig.timestamp,
+            templateFilesHash: sig.templateFilesHash, previousDataHash: sig.previousDataHash
+        });
+        let sigValid = false;
+        try { sigValid = verifyWithCert(payload, sig.signature, sig.certPem); } catch { /* tampered cert */ }
+
+        const dataMatch = currentHash === sig.dataHash;
+
+        // Confirm this step's recorded predecessor hash still matches what the
+        // previous step actually signed — this is what makes tampering with an
+        // earlier, already-superseded step detectable.
+        let chainValid: boolean;
+        if (sig.previousDataHash === null) {
+            chainValid = step === steps[0];
+        } else {
+            const prev = results.find(r => r.step === step - 1);
+            chainValid = prev !== undefined && prev.status === 'checked' && prev.dataHash === sig.previousDataHash;
+        }
+
+        results.push({
+            step, status: 'checked', sigValid, dataMatch, chainValid,
+            dataHash: sig.dataHash,
+            signer: signerFromCert(sig.certPem),
+            timestamp: sig.timestamp,
+            issuer: issuerFromCert(sig.certPem),
+            templateFilesHash: sig.templateFilesHash
+        });
+    }
+
+    return results;
+}
+
+// Shared by verifyTemplate and verifyAll so both describe the template the same way.
+function formatTemplateResult(result: Extract<TemplateVerifyResult, { signed: true }>): string {
+    const filesMatch = result.filesMapValid && result.changedFiles.length === 0;
+    let s = `TEMPLATE\nSigned by: ${result.signer}\nSigned: ${new Date(result.timestamp).toLocaleString()}\nIssuer: ${result.issuer}`;
+    if (!result.filesMapValid)           s += '\n⚠ WARNING: tampering has occurred — the signed file record itself has been altered.';
+    else if (result.changedFiles.length) s += `\n⚠ WARNING: tampering has occurred — the following file(s) do not match what was signed:\n${result.changedFiles.join('\n')}`;
+    if (!result.sigValid)                s += '\n⚠ WARNING: tampering has occurred — the certificate signature is invalid.';
+    if (filesMatch && result.sigValid)   s += '\nStatus: OK.';
+    return s;
+}
+
+// Shared by verifyData and verifyAll so both describe a step's status the same way.
+// templateNote, when given, is appended as-is (verifyAll uses it to report whether
+// this step's contribution matches the current template).
+function formatDataStepResult(r: DataStepResult, templateNote?: string): string {
+    if (r.status === 'missing-signature') {
+        return `STEP ${r.step}\n⚠ WARNING: tampering has occurred — this step's signature is missing.`;
+    }
+    if (r.status === 'missing-data') {
+        return `STEP ${r.step}\n⚠ WARNING: tampering has occurred — this step's data is missing even though it was signed.`;
+    }
+
+    let s = `STEP ${r.step}\nSigned by: ${r.signer}\nSigned: ${new Date(r.timestamp).toLocaleString()}\nIssuer: ${r.issuer}`;
+    if (!r.dataMatch)  s += '\n⚠ WARNING: tampering has occurred — this contribution does not match what was signed.';
+    if (!r.sigValid)   s += '\n⚠ WARNING: tampering has occurred — the signature is invalid.';
+    if (!r.chainValid) s += '\n⚠ WARNING: tampering has occurred — this step no longer links to the previous contribution; an earlier step may have been altered after the fact.';
+    if (templateNote) s += `\n${templateNote}`;
+    const ok = r.dataMatch && r.sigValid && r.chainValid && !(templateNote && templateNote.startsWith('⚠'));
+    if (ok) s += '\nStatus: OK.';
+    return s;
 }
 
 async function verifyTemplate(win: BrowserWindow): Promise<void> {
@@ -420,106 +544,88 @@ async function verifyTemplate(win: BrowserWindow): Promise<void> {
     const filesMatch = result.filesMapValid && result.changedFiles.length === 0;
     const ok = result.sigValid && filesMatch;
 
-    let detail = `Signed by: ${result.signer}\nSigned: ${new Date(result.timestamp).toLocaleString()}\nIssuer: ${result.issuer}`;
-    if (!result.filesMapValid)          detail += '\n\nThe signed file record itself has been tampered with.';
-    else if (result.changedFiles.length) detail += `\n\nThe following file(s) do not match what was originally signed:\n${result.changedFiles.join('\n')}`;
-    if (!result.sigValid)                detail += '\n\nThe certificate signature is invalid.';
-
     dialog.showMessageBox(win, {
         type: ok ? 'info' : 'error',
         title: ok ? 'Template Verified' : 'Verification Failed',
         message: ok ? '✓ Template is authentic and unmodified.' : '✗ Template has been tampered with.',
-        detail
+        detail: formatTemplateResult(result)
     });
 }
 
 async function verifyData(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
-    const result = await checkData();
-    if (result.status === 'unsigned') {
+    const results = await checkDataSteps();
+    if (!results.length) {
         dialog.showMessageBox(win, { type: 'info', message: 'The data in this file has not been signed.' });
         return;
     }
-    if (result.status === 'missing-data') {
-        dialog.showMessageBox(win, { type: 'error', message: `No ${DATA_FILE} found.` });
-        return;
-    }
 
-    const ok = result.sigValid && result.dataMatch;
-
-    let detail = `Signed by: ${result.signer}\nSigned: ${new Date(result.timestamp).toLocaleString()}\nIssuer: ${result.issuer}`;
-    if (!result.dataMatch) detail += '\n\nThe data does not match what was signed.';
-    if (!result.sigValid)  detail += '\n\nThe data signature is invalid.';
+    const ok = results.every(r => r.status === 'checked' && r.sigValid && r.dataMatch && r.chainValid);
 
     dialog.showMessageBox(win, {
         type: ok ? 'info' : 'error',
         title: ok ? 'Data Verified' : 'Verification Failed',
-        message: ok ? '✓ Data is authentic and unmodified.' : '✗ Data has been tampered with.',
-        detail
+        message: ok ? '✓ All contributions are authentic and unmodified.' : '✗ Tampering detected in one or more contributions.',
+        detail: results.map(r => formatDataStepResult(r)).join('\n\n')
     });
 }
 
-// Runs the template check, the data check, and a cross-check confirming the
-// current template is the one the data was actually signed against, and
-// reports all three as one combined dialog.
+// Lays out the template signature and every data step in chronological order, so a
+// template signed in between two data steps shows up exactly where it happened —
+// rather than as a single aggregate "matches" summary that hides *when* it was signed
+// relative to each contribution. Each data step separately reports whether it matches
+// the current template or predates any template signature.
 async function verifyAll(win: BrowserWindow): Promise<void> {
     if (!zip) { dialog.showMessageBox(win, { type: 'warning', message: 'No file loaded.' }); return; }
 
     const template = await checkTemplate();
-    const data = await checkData();
+    const dataSteps = await checkDataSteps();
 
-    const sections: string[] = [];
     let anyTampering = false;
+    const leading: string[] = [];
+    const timeline: { timestamp: string; text: string }[] = [];
+    const undated: string[] = [];
 
     if (!template.signed) {
-        sections.push('TEMPLATE\nNot signed.');
+        leading.push('TEMPLATE\nNot signed.');
     } else {
-        const filesMatch = template.filesMapValid && template.changedFiles.length === 0;
-        let s = `TEMPLATE\nSigned by: ${template.signer}\nSigned: ${new Date(template.timestamp).toLocaleString()}\nIssuer: ${template.issuer}`;
-        if (!template.filesMapValid) {
-            s += '\n⚠ WARNING: tampering has occurred — the signed file record itself has been altered.';
-            anyTampering = true;
-        } else if (template.changedFiles.length) {
-            s += `\n⚠ WARNING: tampering has occurred — the following file(s) do not match what was signed:\n${template.changedFiles.join('\n')}`;
-            anyTampering = true;
-        }
-        if (!template.sigValid) {
-            s += '\n⚠ WARNING: tampering has occurred — the certificate signature is invalid.';
-            anyTampering = true;
-        }
-        if (filesMatch && template.sigValid) s += '\nStatus: OK.';
-        sections.push(s);
+        if (!template.filesMapValid || template.changedFiles.length > 0 || !template.sigValid) anyTampering = true;
+        timeline.push({ timestamp: template.timestamp, text: formatTemplateResult(template) });
     }
 
-    if (data.status === 'unsigned') {
-        sections.push('DATA\nNot signed.');
-    } else if (data.status === 'missing-data') {
-        sections.push(`DATA\n⚠ WARNING: tampering has occurred — ${DATA_FILE} is missing even though a data signature exists.`);
-        anyTampering = true;
+    if (!dataSteps.length) {
+        leading.push('DATA\nNot signed.');
     } else {
-        let s = `DATA\nSigned by: ${data.signer}\nSigned: ${new Date(data.timestamp).toLocaleString()}\nIssuer: ${data.issuer}`;
-        if (!data.dataMatch) {
-            s += '\n⚠ WARNING: tampering has occurred — the data does not match what was signed.';
-            anyTampering = true;
+        for (const r of dataSteps) {
+            if (r.status !== 'checked') {
+                undated.push(formatDataStepResult(r));
+                anyTampering = true;
+                continue;
+            }
+
+            let templateNote: string;
+            if (r.templateFilesHash === null) {
+                templateNote = 'Template: had not been signed at the time of this contribution.';
+            } else if (!template.signed) {
+                templateNote = '⚠ WARNING: tampering has occurred — this contribution was signed against a template, but no template signature is present now.';
+                anyTampering = true;
+            } else if (r.templateFilesHash === template.currentFilesHash) {
+                templateNote = 'Template: matches the current template.';
+            } else {
+                templateNote = '⚠ WARNING: tampering has occurred — the current template does not match what this contribution was signed against.';
+                anyTampering = true;
+            }
+
+            if (!r.sigValid || !r.dataMatch || !r.chainValid) anyTampering = true;
+            timeline.push({ timestamp: r.timestamp, text: formatDataStepResult(r, templateNote) });
         }
-        if (!data.sigValid) {
-            s += '\n⚠ WARNING: tampering has occurred — the data signature is invalid.';
-            anyTampering = true;
-        }
-        if (data.dataMatch && data.sigValid) s += '\nStatus: OK.';
-        sections.push(s);
     }
 
-    let crossCheck = 'TEMPLATE MATCHES SIGNED DATA\n';
-    if (!template.signed || data.status !== 'checked' || data.templateFilesHash === null) {
-        crossCheck += 'Not signed.';
-    } else if (data.templateFilesHash === template.currentFilesHash) {
-        crossCheck += 'Status: OK — the data was signed against the current template.';
-    } else {
-        crossCheck += '⚠ WARNING: tampering has occurred — the current template does not match the template the data was signed against.';
-        anyTampering = true;
-    }
-    sections.push(crossCheck);
+    // ISO timestamps sort correctly as plain strings, so the template's signing event
+    // interleaves with data steps exactly where it actually occurred.
+    timeline.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+    const sections = [...leading, ...timeline.map(t => t.text), ...undated];
 
     dialog.showMessageBox(win, {
         type: anyTampering ? 'warning' : 'info',
@@ -756,7 +862,7 @@ async function selectFilePath(): Promise<string | null> {
 
 async function saveDataToFile(data: any): Promise<boolean> {
     if (!zip) return false;
-    zip.file(DATA_FILE, JSON.stringify(data, null, 2));
+    zip.file(DATA_TEMP_FILE, JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const filePath = currentFilePath;
     if (filePath) {
@@ -768,7 +874,7 @@ async function saveDataToFile(data: any): Promise<boolean> {
 
 async function saveAsDataToFile(data: any): Promise<void> {
     if (!zip) return;
-    zip.file(DATA_FILE, JSON.stringify(data, null, 2));
+    zip.file(DATA_TEMP_FILE, JSON.stringify(data, null, 2));
     const content = await zip.generateAsync({ type: 'nodebuffer' });
     const { filePath } = await dialog.showSaveDialog({
         title: 'Save AltPDF File',

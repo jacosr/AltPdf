@@ -62,7 +62,7 @@ function _getFormData(): any {
 
 async function _loadData(): Promise<any> {
     console.log("Loading data...");
-    const res = await fetch('data.json');
+    const res = await fetch('data-temp.json');
     console.log("Loaded data:", res);
     if (!res.ok) { return {}; }
     return res.json();
