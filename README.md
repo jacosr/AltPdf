@@ -100,4 +100,4 @@ Sometimes, you may want to group properties into a nested object.  Use the field
 </table>
 
 <h3>Other links</h3>
-[Branding Thesis](BrandingThesis.md)
+<a href="BrandingThesis.md">Branding Thesis</a>
