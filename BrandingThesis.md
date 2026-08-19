@@ -26,8 +26,8 @@ The AltPdf app icon is permanently anchored to the following technical and color
 
 ### 3.1 Color Space Matrix
 * **Primary Icon Stroke (Electric Green):**
-  * Hex: `#00FF00` (or specified high-visibility neon variant)
-  * RGB: `rgb(0, 255, 0)`
+  * Hex: `#35F600` (or specified high-visibility neon variant)
+  * RGB: `rgb(53, 246, 0)`
 * **Primary Canvas Background (Absolute Black):**
   * Hex: `#000000`
   * RGB: `rgb(0, 0, 0)`
