@@ -16,6 +16,7 @@ declare global {
       verifyTemplate: () => Promise<void>;
       verifyData:     () => Promise<void>;
       verifyAll:      () => Promise<void>;
+      toggleChangesPanel: () => Promise<void>;
     };
   }
 }

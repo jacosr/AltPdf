@@ -635,6 +635,64 @@ async function verifyAll(win: BrowserWindow): Promise<void> {
     });
 }
 
+// ─── changes panel ────────────────────────────────────────────────────────────
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+// Checkbox groups and multi-selects serialize as arrays whose order reflects
+// each option's fixed position in the HTML, not any meaningful sequence chosen
+// by the signer — so two such arrays holding the same values in a different
+// order represent the same selection and must compare as equal, not "changed".
+function valuesEqual(a: unknown, b: unknown): boolean {
+    if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false;
+        const sortedA = a.map(v => JSON.stringify(v)).sort();
+        const sortedB = b.map(v => JSON.stringify(v)).sort();
+        return sortedA.every((v, i) => v === sortedB[i]);
+    }
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// Returns only the parts of `current` that differ from `previous`, preserving
+// nesting so the result can be fed straight into bindData. The renderer clears
+// the form before applying this, so an omitted field simply stays at whatever
+// blank/unchecked state clearing left it in — this also sidesteps fields (like
+// an unchecked checkbox group) that never appear in the JSON at all when empty,
+// which a "current-shaped" diff has no way to know should be nulled out.
+// Arrays are compared as unordered sets (see valuesEqual); other primitives are
+// compared as whole values; only plain objects are recursed into field-by-field.
+function diffValues(previous: unknown, current: unknown): unknown {
+    if (isPlainObject(current) && isPlainObject(previous)) {
+        const changed: Record<string, unknown> = {};
+        for (const key of Object.keys(current)) {
+            const delta = diffValues(previous[key], current[key]);
+            if (delta !== undefined) changed[key] = delta;
+        }
+        return Object.keys(changed).length ? changed : undefined;
+    }
+    return valuesEqual(previous, current) ? undefined : current;
+}
+
+// Compares two data.json-shaped payloads (`{ formName: {...} }`) and returns
+// only the fields that changed, in the same shape, so the result can be passed
+// straight to bindData (after the renderer clears the form) to preview just the
+// delta of one contribution.
+function diffData(previous: any, current: any): any {
+    const formName = Object.keys(current)[0];
+    if (!formName) return current;
+    const changed = diffValues(previous?.[formName], current[formName]);
+    return { [formName]: changed ?? {} };
+}
+
+async function readDataStepJson(step: number): Promise<any | null> {
+    if (!zip) return null;
+    const file = zip.file(dataStepFile(step));
+    if (!file) return null;
+    return JSON.parse(await file.async('text'));
+}
+
 // ─── menu ─────────────────────────────────────────────────────────────────────
 
 const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -708,7 +766,15 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
         label: 'View',
         submenu: [
             { role: 'reload' },
-            { role: 'toggleDevTools' }
+            { role: 'toggleDevTools' },
+            { type: 'separator' },
+            {
+                label: 'Changes',
+                click: async (_item, browserWindow) => {
+                    if (!browserWindow) return;
+                    await (browserWindow as BrowserWindow).webContents.executeJavaScript('window.altpdf.toggleChangesPanel()');
+                }
+            }
         ]
     }
 ];
@@ -798,6 +864,27 @@ ipcMain.handle('verify-data', async (event) => {
 ipcMain.handle('verify-all', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) await verifyAll(win);
+});
+
+ipcMain.handle('list-changes', async () => {
+    const results = await checkDataSteps();
+    return results
+        .filter((r): r is Extract<DataStepResult, { status: 'checked' }> => r.status === 'checked')
+        .map(r => ({ step: r.step, signer: r.signer, timestamp: r.timestamp }));
+});
+
+ipcMain.handle('load-change-step', async (_event, step: number) => {
+    return await readDataStepJson(step);
+});
+
+ipcMain.handle('load-change-delta', async (_event, step: number) => {
+    const current = await readDataStepJson(step);
+    if (!current) return null;
+    const steps = listDataSteps();
+    const idx = steps.indexOf(step);
+    const previousStep = idx > 0 ? steps[idx - 1] : null;
+    const previous = previousStep !== null ? await readDataStepJson(previousStep) : {};
+    return diffData(previous ?? {}, current);
 });
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
