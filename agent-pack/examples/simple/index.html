@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Form</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Contact Form</h1>
+    <p class="intro">A flat form with no fieldsets — every field is a top-level key.</p>
+
+    <form name="contact_form">
+      <div class="field">
+        <label for="name">Full Name</label>
+        <input type="text" name="name" id="name" placeholder="Jane Smith">
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" placeholder="jane@example.com">
+      </div>
+
+      <div class="field">
+        <label for="message">Message</label>
+        <textarea name="message" id="message" rows="4" placeholder="How can we help?"></textarea>
+      </div>
+
+      <button type="button" id="save">Save</button>
+    </form>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>

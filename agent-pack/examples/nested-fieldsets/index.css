@@ -1,0 +1,95 @@
+:root {
+  --accent: #2563eb;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --bg: #f9fafb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.wrap {
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 32px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+h1 { margin: 0 0 4px; font-size: 22px; }
+.intro { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin: 0 0 20px;
+}
+
+legend {
+  padding: 0 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+
+.group-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+label:not(.option) {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.option {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.optional { color: var(--muted); font-weight: 400; }
+
+input[type="text"], input[type="email"], select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover { opacity: 0.9; }

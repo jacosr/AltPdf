@@ -693,6 +693,32 @@ async function readDataStepJson(step: number): Promise<any | null> {
     return JSON.parse(await file.async('text'));
 }
 
+// ─── AI form-building kit ─────────────────────────────────────────────────────
+
+async function exportAgentPack(win: BrowserWindow): Promise<void> {
+    const result = await dialog.showOpenDialog(win, {
+        title: 'Choose a folder for the AI Form-Building Kit',
+        properties: ['openDirectory', 'createDirectory']
+    });
+    if (result.canceled || !result.filePaths.length) return;
+    const destination = result.filePaths[0];
+
+    try {
+        fs.cpSync(agentPackDir(), destination, { recursive: true });
+        await dialog.showMessageBox(win, {
+            type: 'info', title: 'Kit Copied',
+            message: '✓ AI Form-Building Kit copied.',
+            detail: `Copied to: ${destination}\n\nOpen that folder in Claude Code, Cursor, GitHub Copilot, or Gemini CLI and describe the form you want to build.`
+        });
+    } catch (err) {
+        await dialog.showMessageBox(win, {
+            type: 'error', title: 'Copy Failed',
+            message: 'Could not copy the AI Form-Building Kit.',
+            detail: err instanceof Error ? err.message : String(err)
+        });
+    }
+}
+
 // ─── menu ─────────────────────────────────────────────────────────────────────
 
 const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -724,6 +750,13 @@ const menuTemplate: Electron.MenuItemConstructorOptions[] = [
                     (browserWindow as BrowserWindow).webContents.print({}, (success, errorType) => {
                         if (!success && errorType) console.error('Print failed:', errorType);
                     });
+                }
+            },
+            { type: 'separator' },
+            {
+                label: 'Get AI Form-Building Kit…',
+                click: async (_item, browserWindow) => {
+                    if (browserWindow) await exportAgentPack(browserWindow as BrowserWindow);
                 }
             },
             { type: 'separator' },
@@ -914,6 +947,15 @@ async function openApdfFile(win: BrowserWindow, filePath: string): Promise<void>
 
 function getApdfPathFromArgv(argv: string[]): string | null {
     return argv.find(arg => arg.toLowerCase().endsWith('.apdf')) ?? null;
+}
+
+// The AI form-building kit ships as an extraResources entry (see package.json),
+// landing under resources/agent-pack in a packaged app; in dev it's just the
+// agent-pack folder at the repo root, one level up from dist/.
+function agentPackDir(): string {
+    return app.isPackaged
+        ? path.join(process.resourcesPath, 'agent-pack')
+        : path.join(__dirname, '..', 'agent-pack');
 }
 
 async function getFileFromZip(filePath: string): Promise<Buffer | null> {

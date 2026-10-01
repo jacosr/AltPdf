@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 let _formDataCollector: (() => any) | null = null;
 let _bindDataOverride: ((data: any) => void) | null = null;
 let _displaySaveResultOverride: ((result: boolean) => void) | null = null;
+let _highlightStyle: string = 'background-color: yellow';
 
 function _getFormData(): any {
     if (_formDataCollector) return _formDataCollector();
@@ -180,6 +181,63 @@ function _clearForm(): void {
     }
 }
 
+// Elements currently showing the highlight style, paired with their style.cssText
+// from just before it was applied — restoring that (rather than trying to peel
+// the highlightStyle properties back out) is what lets _clearHighlights() revert
+// cleanly regardless of what arbitrary CSS highlightStyle contains.
+let _highlightedElements: { el: HTMLElement; originalStyle: string }[] = [];
+
+function _clearHighlights(): void {
+    for (const { el, originalStyle } of _highlightedElements) {
+        el.style.cssText = originalStyle;
+    }
+    _highlightedElements = [];
+}
+
+function _applyHighlight(el: HTMLElement): void {
+    _highlightedElements.push({ el, originalStyle: el.style.cssText });
+    el.style.cssText += `;${_highlightStyle}`;
+}
+
+// Walks a bindData-shaped payload the same way _bindData's fill() does, but
+// instead of setting values, highlights whichever fields it would have touched —
+// used to show which fields changed in a delta view. A checkbox/radio group or
+// multi-select counts as one field: everything sharing that name gets highlighted
+// together, since the diff can only tell us the group's value changed as a whole,
+// not which individual option flipped.
+function _highlightChangedFields(data: any): void {
+    const formName = Object.keys(data)[0];
+    if (!formName) return;
+    const formData: Record<string, any> = data[formName];
+
+    const form = document.querySelector<HTMLFormElement>(`form[name="${formName}"]`)
+        ?? document.getElementById(formName) as HTMLFormElement | null
+        ?? document.querySelector('form');
+    if (!form) return;
+
+    function walk(container: Element, values: Record<string, any>): void {
+        for (const child of container.children) {
+            if (child.tagName.toUpperCase() === 'FIELDSET') {
+                const name = child.getAttribute('name');
+                if (name && name in values && !Array.isArray(values[name]) && typeof values[name] === 'object') {
+                    walk(child, values[name]);
+                } else {
+                    walk(child, values);
+                }
+            } else if (child.matches('input, textarea, select')) {
+                const name = child.getAttribute('name');
+                if (name && name in values) {
+                    _applyHighlight(child as HTMLElement);
+                }
+            } else {
+                walk(child, values);
+            }
+        }
+    }
+
+    walk(form, formData);
+}
+
 async function _renderChangesList(listEl: HTMLElement): Promise<void> {
     listEl.innerHTML = '';
     const changes: { step: number; signer: string; timestamp: string }[] =
@@ -217,7 +275,7 @@ async function _renderChangesList(listEl: HTMLElement): Promise<void> {
         eyeBtn.title = 'View this contribution';
         eyeBtn.onclick = async () => {
             const data = await ipcRenderer.invoke('load-change-step', change.step);
-            if (data) { _clearForm(); _bindData(data); }
+            if (data) { _clearForm(); _clearHighlights(); _bindData(data); }
         };
 
         const deltaBtn = document.createElement('button');
@@ -229,7 +287,7 @@ async function _renderChangesList(listEl: HTMLElement): Promise<void> {
         deltaBtn.onclick = async () => {
             if (isFirst) return;
             const diff = await ipcRenderer.invoke('load-change-delta', change.step);
-            if (diff) { _clearForm(); _bindData(diff); }
+            if (diff) { _clearForm(); _clearHighlights(); _bindData(diff); _highlightChangedFields(diff); }
         };
 
         for (const btn of [eyeBtn, deltaBtn]) {
@@ -288,6 +346,7 @@ async function _toggleChangesPanel(): Promise<void> {
         // was opened, rather than reloading the last saved draft off disk.
         if (_preChangesSnapshot) {
             _clearForm();
+            _clearHighlights();
             _bindData(_preChangesSnapshot);
             _preChangesSnapshot = null;
         }
@@ -306,6 +365,8 @@ contextBridge.exposeInMainWorld('altpdf', {
     setBindData: (fn: (data: any) => void) => { _bindDataOverride = fn; },
     setDisplaySaveResult: (fn: (result: boolean) => void) => { _displaySaveResultOverride = fn; },
     getFormData: () => { return _getFormData(); },
+    getHighlightStyle: () => _highlightStyle,
+    setHighlightStyle: (value: string) => { _highlightStyle = value; },
     openFile: () => ipcRenderer.invoke('open-apdf'),
     saveFile: async () => {
         const data = _getFormData();     

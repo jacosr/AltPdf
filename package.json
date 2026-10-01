@@ -44,6 +44,12 @@
       "dist/**/*",
       "node_modules/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "agent-pack",
+        "to": "agent-pack"
+      }
     ]
   },
   "keywords": [],

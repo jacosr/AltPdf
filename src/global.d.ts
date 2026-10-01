@@ -11,6 +11,8 @@ declare global {
       setGetFormData: (fn: () => any) => void;
       setBindData: (fn: (data: any) => void) => void;
       getFormData: () => any;
+      getHighlightStyle: () => string;
+      setHighlightStyle: (value: string) => void;
       signTemplate:   () => Promise<void>;
       signData:       () => Promise<void>;
       verifyTemplate: () => Promise<void>;

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Registration</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Event Registration</h1>
+    <p class="intro">
+      Grouped fields via named fieldsets, plus a checkbox group, a radio group,
+      and a multi-select — see ALTPDF_FORM_GUIDE.md section 2 for the exact JSON
+      each of these produces.
+    </p>
+
+    <form name="event_registration">
+
+      <fieldset name="attendee">
+        <legend>Attendee</legend>
+
+        <div class="field">
+          <label for="name">Full Name</label>
+          <input type="text" name="name" id="name" placeholder="Jane Smith">
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" placeholder="jane@example.com">
+        </div>
+      </fieldset>
+
+      <fieldset name="preferences">
+        <legend>Preferences</legend>
+
+        <div class="field">
+          <span class="group-label">Which sessions interest you?</span>
+          <label class="option"><input type="checkbox" name="sessions" value="keynote"> Keynote</label>
+          <label class="option"><input type="checkbox" name="sessions" value="workshops"> Workshops</label>
+          <label class="option"><input type="checkbox" name="sessions" value="networking"> Networking</label>
+        </div>
+
+        <div class="field">
+          <span class="group-label">Meal preference</span>
+          <label class="option"><input type="radio" name="meal" value="standard"> Standard</label>
+          <label class="option"><input type="radio" name="meal" value="vegetarian"> Vegetarian</label>
+          <label class="option"><input type="radio" name="meal" value="vegan"> Vegan</label>
+        </div>
+
+        <div class="field">
+          <label for="dietary_notes">Dietary Restrictions <span class="optional">(hold Ctrl/Cmd to select multiple)</span></label>
+          <select name="dietary_notes" id="dietary_notes" multiple size="4">
+            <option value="gluten_free">Gluten-free</option>
+            <option value="nut_allergy">Nut allergy</option>
+            <option value="dairy_free">Dairy-free</option>
+            <option value="shellfish_allergy">Shellfish allergy</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <button type="button" id="save">Save</button>
+    </form>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>
