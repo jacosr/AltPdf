@@ -3,7 +3,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 let _formDataCollector: (() => any) | null = null;
 let _bindDataOverride: ((data: any) => void) | null = null;
 let _displaySaveResultOverride: ((result: boolean) => void) | null = null;
-let _highlightStyle: string = 'background-color: yellow';
+// outline is included because background-color/border don't paint over a native
+// checkbox/radio's OS-rendered chrome — outline is the one property that
+// reliably draws around any input type, so it's what makes those two visibly
+// highlight too, not just text-like fields.
+let _highlightStyle: string = 'background-color: yellow; border: 1px solid yellow; color: black; outline: 2px solid yellow;';
 
 function _getFormData(): any {
     if (_formDataCollector) return _formDataCollector();
@@ -251,7 +255,7 @@ async function _renderChangesList(listEl: HTMLElement): Promise<void> {
         return;
     }
 
-    changes.forEach((change, index) => {
+    changes.forEach((change) => {
         const row = document.createElement('div');
         Object.assign(row.style, {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -280,12 +284,11 @@ async function _renderChangesList(listEl: HTMLElement): Promise<void> {
 
         const deltaBtn = document.createElement('button');
         deltaBtn.innerHTML = DELTA_ICON;
-        // The first contribution chronologically has no predecessor to diff against.
-        const isFirst = index === 0;
-        deltaBtn.title = isFirst ? 'No previous contribution to compare against' : 'View what changed in this contribution';
-        deltaBtn.disabled = isFirst;
+        deltaBtn.title = 'View what changed in this contribution';
         deltaBtn.onclick = async () => {
-            if (isFirst) return;
+            // For the first contribution, main's load-change-delta diffs against
+            // an empty previous step, so every field it entered shows as changed —
+            // same mechanism as every later delta, just with nothing to start from.
             const diff = await ipcRenderer.invoke('load-change-delta', change.step);
             if (diff) { _clearForm(); _clearHighlights(); _bindData(diff); _highlightChangedFields(diff); }
         };
