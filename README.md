@@ -55,8 +55,8 @@ Sometimes, you may want to group properties into a nested object.  Use the field
       &lt;input name="flavors" type="checkbox" value="chocolate"&gtchocolate&ltbr/&gt;
       &lt;input name="flavors" type="checkbox" value="strawberry"&gtstrawberry&ltbr/&gt;
       &lt;input name="flavors" type="checkbox" value="coffee"&gtcoffee&ltbr/&gt;
-      &lt;input id="submit" type="button" value="Submit" /&gt;
     &lt;/fieldset&gt;
+   &lt;input id="submit" type="button" value="Submit" /&gt;
   &lt/form&gt;  
   </pre>
   The json collected from the form now looks like this:
